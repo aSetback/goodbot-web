@@ -9,6 +9,28 @@ export type DiscordGuild = {
 export type DiscordGuildMember = {
   user?: { id: string; username: string };
   nick?: string | null;
+  roles?: string[];
+};
+
+export type DiscordRole = {
+  id: string;
+  name: string;
+  permissions: string;
+};
+
+export type DiscordChannelOverwrite = {
+  id: string;
+  type: number | string;
+  allow: string;
+  deny: string;
+};
+
+export type DiscordChannel = {
+  id: string;
+  name: string;
+  type: number;
+  parent_id?: string | null;
+  permission_overwrites?: DiscordChannelOverwrite[];
 };
 
 // Server-to-server calls authenticated as the bot (mirrors Controller::botRequest).
@@ -80,4 +102,73 @@ export async function sendGuildMessage(channelId: string, message: string): Prom
     method: "POST",
     body: { content: message },
   });
+}
+
+export async function getGuildChannels(guildId: string): Promise<DiscordChannel[]> {
+  return botRequest<DiscordChannel[]>(`/guilds/${guildId}/channels`);
+}
+
+export async function getGuildChannel(channelId: string): Promise<DiscordChannel> {
+  return botRequest<DiscordChannel>(`/channels/${channelId}`);
+}
+
+export async function createGuildChannel(
+  guildId: string,
+  params: { name: string; type: number; parent_id?: string }
+): Promise<DiscordChannel> {
+  return botRequest<DiscordChannel>(`/guilds/${guildId}/channels`, { body: params });
+}
+
+export async function renameChannel(channelId: string, name: string): Promise<DiscordChannel> {
+  return botRequest<DiscordChannel>(`/channels/${channelId}`, { method: "PATCH", body: { name } });
+}
+
+export async function getGuildRoles(guildId: string): Promise<DiscordRole[]> {
+  return botRequest<DiscordRole[]>(`/guilds/${guildId}/roles`);
+}
+
+// Mirrors Raid::getRoles() -- the signed-in member's roles on this guild, keyed by role ID.
+export async function getMemberRoles(
+  guildId: string,
+  userId: string
+): Promise<Record<string, DiscordRole>> {
+  const [member, roles] = await Promise.all([
+    getGuildMember(guildId, userId),
+    getGuildRoles(guildId),
+  ]);
+  const rolesByID = new Map(roles.map((role) => [role.id, role]));
+  const memberRoles: Record<string, DiscordRole> = {};
+  for (const roleID of member.roles ?? []) {
+    const role = rolesByID.get(roleID);
+    if (role) memberRoles[roleID] = role;
+  }
+  return memberRoles;
+}
+
+const ADMINISTRATOR = 0x8;
+const MANAGE_CHANNELS = 0x10;
+
+// Mirrors Raid::hasPermission() -- true if the member's effective permissions
+// on this category (role permissions plus any role-based overwrite allows)
+// include ADMINISTRATOR or MANAGE_CHANNELS.
+export function hasChannelManagePermission(
+  memberRoles: Record<string, DiscordRole>,
+  category: DiscordChannel | null
+): boolean {
+  const effective: Record<string, bigint> = {};
+  for (const [id, role] of Object.entries(memberRoles)) {
+    effective[id] = BigInt(role.permissions);
+  }
+  for (const overwrite of category?.permission_overwrites ?? []) {
+    if (String(overwrite.type) === "0" || overwrite.type === "role") {
+      if (effective[overwrite.id] !== undefined) {
+        effective[overwrite.id] |= BigInt(overwrite.allow);
+      }
+    }
+  }
+  return Object.values(effective).some(
+    (permissions) =>
+      (permissions & BigInt(ADMINISTRATOR)) === BigInt(ADMINISTRATOR) ||
+      (permissions & BigInt(MANAGE_CHANNELS)) === BigInt(MANAGE_CHANNELS)
+  );
 }
