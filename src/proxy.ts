@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 // (`Route::get('{raid}', ...)`) is *inside* the oauth group, the default
 // here has to be "protected" too -- an allowlist of prefixes would silently
 // leave new top-level pages (and the [hash] catch-all) unprotected.
-const PUBLIC_PREFIXES = ["/api/auth", "/dashboard/admin"];
+const PUBLIC_PREFIXES = ["/api/auth", "/signin", "/dashboard/admin"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -21,7 +21,7 @@ export default auth((req) => {
     isStaticAsset ||
     PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   if (!isPublic && !req.auth) {
-    const signInUrl = new URL("/api/auth/signin/discord", req.nextUrl.origin);
+    const signInUrl = new URL("/signin", req.nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
