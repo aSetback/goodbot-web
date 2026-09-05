@@ -23,6 +23,8 @@ export class Raid extends Model<InferAttributes<Raid>, InferCreationAttributes<R
   declare channelID: string;
   declare guildID: string;
   declare memberID: string;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 
 Raid.init(
@@ -47,6 +49,8 @@ Raid.init(
     channelID: { type: DataTypes.BIGINT, allowNull: false },
     guildID: { type: DataTypes.BIGINT, allowNull: false },
     memberID: { type: DataTypes.BIGINT, allowNull: false },
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
   },
   { sequelize, modelName: "raid", tableName: "raids" }
 );

@@ -104,6 +104,16 @@ export async function sendGuildMessage(channelId: string, message: string): Prom
   });
 }
 
+// Mirrors Controller::sendMessage() when called with a guild ID instead of a
+// channel ID: posts to the guild's first text channel.
+export async function sendGuildAnnouncement(guildId: string, message: string): Promise<void> {
+  const channels = await getGuildChannels(guildId);
+  const textChannel = channels.find((channel) => channel.type === 0);
+  if (textChannel) {
+    await sendGuildMessage(textChannel.id, message);
+  }
+}
+
 export async function getGuildChannels(guildId: string): Promise<DiscordChannel[]> {
   return botRequest<DiscordChannel[]>(`/guilds/${guildId}/channels`);
 }
