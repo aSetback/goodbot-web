@@ -26,7 +26,6 @@ export async function saveDashboardSettings(serverID: string, formData: FormData
     guildID: serverID,
     faction: String(formData.get("faction") ?? "") || null,
     server: String(formData.get("wowServer") ?? "") || null,
-    region: String(formData.get("region") ?? "") || null,
     sheet: String(formData.get("sheetID") ?? "") || null,
   });
 
@@ -49,15 +48,15 @@ export async function saveDashboardSetup(
 
   const settings: {
     server?: string;
-    region?: string;
     expansion?: string;
     faction?: string;
     raidcategory?: string;
   } = {};
 
   if (data.server) {
-    const [region, wowServer] = data.server.split("/");
-    settings.region = region;
+    // data.server arrives as "US/Mankrik" (region/name) from the wizard's
+    // select, but `settings` has no region column -- keep just the name.
+    const [, wowServer] = data.server.split("/");
     settings.server = wowServer;
   }
   if (data.expansion) settings.expansion = data.expansion;

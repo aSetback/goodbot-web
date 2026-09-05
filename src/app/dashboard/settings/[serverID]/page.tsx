@@ -47,17 +47,6 @@ export default async function DashboardSettingsPage({
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-zinc-500" htmlFor="region">
-            Region
-          </label>
-          <select id="region" name="region" defaultValue={settings?.region ?? ""} className={inputClass}>
-            <option value=""></option>
-            <option>NA</option>
-            <option>EU</option>
-          </select>
-        </div>
-
-        <div className="flex flex-col gap-1">
           <label className="text-sm text-zinc-500" htmlFor="wowServer">
             Server
           </label>
