@@ -3,10 +3,14 @@ import { Signup } from "@/lib/models/signup";
 import { RaidReserve } from "@/lib/models/raidReserve";
 import { ReserveItem } from "@/lib/models/reserveItem";
 import { Character } from "@/lib/models/character";
+import { Settings } from "@/lib/models/settings";
+import { RaidCategory } from "@/lib/models/raidCategory";
 
 Signup.hasOne(RaidReserve, { as: "reserve", sourceKey: "id", foreignKey: "signupID" });
 RaidReserve.belongsTo(Signup, { foreignKey: "signupID" });
 
 RaidReserve.belongsTo(ReserveItem, { as: "item", targetKey: "id", foreignKey: "reserveItemID" });
 
-export { Raid, Signup, RaidReserve, ReserveItem, Character };
+Signup.belongsTo(Character, { as: "character", targetKey: "id", foreignKey: "characterID" });
+
+export { Raid, Signup, RaidReserve, ReserveItem, Character, Settings, RaidCategory };

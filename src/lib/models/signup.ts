@@ -1,6 +1,7 @@
 import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional, type NonAttribute } from "sequelize";
 import { sequelize } from "@/lib/db";
 import type { RaidReserve } from "@/lib/models/raidReserve";
+import type { Character } from "@/lib/models/character";
 
 // Mirrors the GoodBot bot's models/signup.js -- same table, same columns.
 export class Signup extends Model<InferAttributes<Signup>, InferCreationAttributes<Signup>> {
@@ -16,6 +17,7 @@ export class Signup extends Model<InferAttributes<Signup>, InferCreationAttribut
   declare memberID: string;
 
   declare reserve?: NonAttribute<RaidReserve>;
+  declare character?: NonAttribute<Character>;
 }
 
 Signup.init(
