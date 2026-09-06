@@ -14,6 +14,7 @@ export async function saveDashboardSettings(serverID: string, formData: FormData
     faction: String(formData.get("faction") ?? "") || null,
     server: String(formData.get("wowServer") ?? "") || null,
     sheet: String(formData.get("sheetID") ?? "") || null,
+    expansion: String(formData.get("expansion") ?? "") || null,
   });
 
   revalidatePath(`/dashboard/${serverID}`);

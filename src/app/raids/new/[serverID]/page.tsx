@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin } from "@/lib/discord";
 import { Settings } from "@/lib/models";
+import { raidOptionsForExpansion } from "@/lib/raidsCatalog";
 import { RaidForm } from "../../RaidForm";
 
 export default async function NewRaidPage({
@@ -29,7 +30,11 @@ export default async function NewRaidPage({
         New Raid &mdash; {server.name}
       </h1>
       <div className="mt-6">
-        <RaidForm guildID={serverID} faction={settings?.faction ?? null} />
+        <RaidForm
+          guildID={serverID}
+          faction={settings?.faction ?? null}
+          raidOptions={raidOptionsForExpansion(settings?.expansion)}
+        />
       </div>
     </div>
   );

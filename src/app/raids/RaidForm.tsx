@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { saveRaid } from "./actions";
-import { RAIDS_CATALOG } from "@/lib/raidsCatalog";
+import { RaidTypeSelect } from "./RaidTypeSelect";
+import type { RaidTypeOption } from "@/lib/raidsCatalog";
 
 const inputClass =
   "w-full rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900";
@@ -23,10 +24,12 @@ export type RaidFormInitial = {
 export function RaidForm({
   guildID,
   faction,
+  raidOptions,
   initial,
 }: {
   guildID: string;
   faction: string | null;
+  raidOptions: RaidTypeOption[];
   initial?: RaidFormInitial;
 }) {
   const [state, formAction, isPending] = useActionState(
@@ -64,20 +67,7 @@ export function RaidForm({
         <label className="text-sm text-zinc-500" htmlFor="raid">
           Raid
         </label>
-        <select id="raid" name="raid" defaultValue={initial?.raid ?? ""} className={inputClass} required>
-          <option value="" disabled>
-            Please select a raid..
-          </option>
-          {Object.entries(RAIDS_CATALOG).map(([expansion, raids]) => (
-            <optgroup key={expansion} label={expansion}>
-              {Object.entries(raids).map(([key, name]) => (
-                <option key={key} value={key}>
-                  {name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        <RaidTypeSelect id="raid" options={raidOptions} defaultValue={initial?.raid} />
       </div>
 
       <div className="flex flex-col gap-1">

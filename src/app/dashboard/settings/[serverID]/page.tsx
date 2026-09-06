@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin } from "@/lib/discord";
 import { Settings } from "@/lib/models";
+import { EXPANSION_LABELS } from "@/lib/raidsCatalog";
 import { saveDashboardSettings } from "../../actions";
 import { NA_SERVER_LIST, EU_SERVER_LIST } from "../../wowServers";
 
@@ -53,6 +54,26 @@ export default async function DashboardSettingsPage({
             <option>Horde</option>
             <option>Both</option>
           </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-zinc-500" htmlFor="expansion">
+            Expansion
+          </label>
+          <select
+            id="expansion"
+            name="expansion"
+            defaultValue={settings?.expansion ?? ""}
+            className={inputClass}
+          >
+            <option value=""></option>
+            {Object.entries(EXPANSION_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-zinc-500">Controls which raids show up when creating a raid.</p>
         </div>
 
         <div className="flex flex-col gap-1">

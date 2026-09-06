@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { Op } from "sequelize";
 import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin, getGuildMember } from "@/lib/discord";
-import { Raid } from "@/lib/models";
-import { raidTypeName } from "@/lib/raidsCatalog";
+import { Raid, Settings } from "@/lib/models";
+import { raidTypeName, raidOptionsForExpansion } from "@/lib/raidsCatalog";
 import { AddRaidModal } from "./AddRaidModal";
 
 export default async function DashboardRaidsPage({
@@ -37,12 +37,15 @@ export default async function DashboardRaidsPage({
   });
 
   const leaderIDs = [...new Set(raids.map((raid) => raid.memberID))];
-  const leaderEntries = await Promise.all(
-    leaderIDs.map(async (memberID) => {
-      const member = await getGuildMember(serverID, memberID);
-      return [memberID, member.nick || member.user?.username || memberID] as const;
-    })
-  );
+  const [leaderEntries, settings] = await Promise.all([
+    Promise.all(
+      leaderIDs.map(async (memberID) => {
+        const member = await getGuildMember(serverID, memberID);
+        return [memberID, member.nick || member.user?.username || memberID] as const;
+      })
+    ),
+    Settings.findOne({ where: { guildID: serverID } }),
+  ]);
   const leaderNames = new Map(leaderEntries);
 
   return (
@@ -59,7 +62,7 @@ export default async function DashboardRaidsPage({
             &larr; Back
           </Link>
         </div>
-        <AddRaidModal serverID={serverID} />
+        <AddRaidModal serverID={serverID} raidOptions={raidOptionsForExpansion(settings?.expansion)} />
       </div>
 
       <table className="mt-6 w-full text-left text-sm">

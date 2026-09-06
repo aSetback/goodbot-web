@@ -3,11 +3,19 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createQuickRaid } from "@/app/raids/actions";
+import { RaidTypeSelect } from "@/app/raids/RaidTypeSelect";
+import type { RaidTypeOption } from "@/lib/raidsCatalog";
 
 const inputClass =
   "w-full rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 
-export function AddRaidModal({ serverID }: { serverID: string }) {
+export function AddRaidModal({
+  serverID,
+  raidOptions,
+}: {
+  serverID: string;
+  raidOptions: RaidTypeOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -56,29 +64,17 @@ export function AddRaidModal({ serverID }: { serverID: string }) {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-zinc-500" htmlFor="dateString">
-                  Raid Date (eg, Jun-15)
+                <label className="text-sm text-zinc-500" htmlFor="date">
+                  Raid Date
                 </label>
-                <input
-                  id="dateString"
-                  name="dateString"
-                  placeholder="Jun-15"
-                  className={inputClass}
-                  required
-                />
+                <input id="date" name="date" type="date" className={inputClass} required />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-zinc-500" htmlFor="raidType">
-                  What instance are you raiding? (eg, SSC)
+                <label className="text-sm text-zinc-500" htmlFor="raid">
+                  What instance are you raiding?
                 </label>
-                <input
-                  id="raidType"
-                  name="raidType"
-                  placeholder="SSC"
-                  className={inputClass}
-                  required
-                />
+                <RaidTypeSelect id="raid" options={raidOptions} />
               </div>
 
               <div className="flex flex-col gap-1">

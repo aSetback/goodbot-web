@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { Raid, Settings } from "@/lib/models";
 import { getGuildChannel, getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
+import { raidOptionsForExpansion } from "@/lib/raidsCatalog";
 import { RaidForm } from "../../RaidForm";
 import { RaidTabs } from "../../RaidTabs";
 import { CommandButtons } from "./CommandButtons";
@@ -59,6 +60,7 @@ export default async function RaidSettingsPage({
         <RaidForm
           guildID={raid.guildID}
           faction={settings?.faction ?? null}
+          raidOptions={raidOptionsForExpansion(settings?.expansion)}
           initial={{
             id: raid.id,
             title: raid.title ?? raid.name,

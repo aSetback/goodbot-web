@@ -142,33 +142,21 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
   redirect("/raids");
 }
 
-function formatDateOnly(date: Date): string {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-// Mirrors the date parsing in functions/raid.js's createRaidChannel(): a
-// free-text "Mon-DD" string (e.g. "Jun-15"), forced onto the current year,
-// rolled to next year if that's already in the past.
-function parseBotStyleRaidDate(dateString: string): Date | null {
-  const [monthPart, dayPart] = dateString.split("-");
-  if (!monthPart || !dayPart) return null;
-  const parsed = new Date(Date.parse(`${monthPart} ${dayPart}`));
-  if (Number.isNaN(parsed.getTime())) return null;
-  parsed.setFullYear(new Date().getFullYear());
-  if (parsed.getTime() < Date.now()) {
-    parsed.setFullYear(parsed.getFullYear() + 1);
-  }
-  return parsed;
+// Formats a picked date the way the bot names its raid channels (e.g.
+// "Jun-15"), for visual consistency with raids created via the bot's own
+// /raid modal.
+function toBotStyleDateString(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).replace(" ", "-");
 }
 
 // Mirrors the bot's /raid slash command modal (slashcommands/raid/raid.js)
-// -- the same 4 fields (name, free-text date, free-text raid type, optional
-// faction), the same channel-name convention ("<dateString>-<name>"), and
-// the same defaults (no title/time/description, color #02a64f) it leaves
-// the DB record with.
+// -- name, date, raid type, and optional faction, the same channel-name
+// convention ("<Mon-D>-<name>"), and the same defaults (no title/time/
+// description, color #02a64f) it leaves the DB record with. Unlike the
+// bot's free-text date field, this uses a real date picker (so no ambiguous
+// "which year did they mean" parsing is needed).
 export async function createQuickRaid(
   serverID: string,
   formData: FormData
@@ -179,28 +167,23 @@ export async function createQuickRaid(
   }
 
   const name = String(formData.get("name") ?? "").trim();
-  const dateString = String(formData.get("dateString") ?? "").trim();
-  const raidTypeRaw = String(formData.get("raidType") ?? "").trim();
+  const date = String(formData.get("date") ?? "").trim();
+  const raidTypeRaw = String(formData.get("raid") ?? "").trim();
   const factionRaw = String(formData.get("faction") ?? "").trim();
 
-  if (!name || !dateString || !raidTypeRaw) {
+  if (!name || !date || !raidTypeRaw) {
     return { error: "Raid name, date, and type are required." };
-  }
-
-  const parsedDate = parseBotStyleRaidDate(dateString);
-  if (!parsedDate) {
-    return { error: `Could not parse raid date "${dateString}". Use a format like Jun-15.` };
   }
 
   const raidType = normalizeRaidType(raidTypeRaw);
   const faction = factionRaw ? factionRaw.toLowerCase() : null;
-  const channelName = `${dateString}-${name}`;
+  const channelName = `${toBotStyleDateString(date)}-${name}`;
 
   const raidData: RaidFields = {
     raid: raidType,
     name,
     title: "",
-    date: formatDateOnly(parsedDate),
+    date,
     time: "",
     description: "",
     confirmation: false,
