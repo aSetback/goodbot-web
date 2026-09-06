@@ -24,9 +24,16 @@ export default async function DashboardRaidsPage({
     notFound();
   }
 
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
   const raids = await Raid.findAll({
-    where: { guildID: serverID, [Op.or]: [{ archived: null }, { archived: false }] },
-    order: [["date", "DESC"]],
+    where: {
+      guildID: serverID,
+      date: { [Op.gte]: today },
+      [Op.or]: [{ archived: null }, { archived: false }],
+    },
+    order: [["date", "ASC"]],
   });
 
   const leaderIDs = [...new Set(raids.map((raid) => raid.memberID))];

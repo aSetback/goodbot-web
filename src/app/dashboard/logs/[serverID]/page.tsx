@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { getUserGuilds, isGuildAdmin } from "@/lib/discord";
+import { getUserGuilds, isGuildAdmin, getGuildChannels } from "@/lib/discord";
 import { Log } from "@/lib/models";
-import { CopyBox } from "@/components/CopyBox";
+import { CopyIconButton } from "@/components/CopyIconButton";
 
 const PAGE_SIZE = 100;
 
@@ -55,18 +55,34 @@ export default async function DashboardLogsPage({
     notFound();
   }
 
-  const logs = await Log.findAll({
-    where: { guildID: serverID },
-    order: [["createdAt", "DESC"]],
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-  });
+  const [logs, channels] = await Promise.all([
+    Log.findAll({
+      where: { guildID: serverID },
+      order: [["createdAt", "DESC"]],
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    }),
+    getGuildChannels(serverID),
+  ]);
+
+  const channelIdsByName = new Map(
+    channels.map((channel) => [channel.name.toLowerCase().trim(), channel.id])
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-        Logs &mdash; {server.name}
-      </h1>
+      <div>
+        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+          Logs &mdash; {server.name}
+        </h1>
+        <Link
+          href={`/dashboard/${serverID}`}
+          className="text-sm text-amber-600 hover:text-amber-700"
+        >
+          &larr; Back
+        </Link>
+      </div>
+
       <table className="mt-6 w-full text-left text-sm">
         <thead>
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -79,16 +95,31 @@ export default async function DashboardLogsPage({
         <tbody>
           {logs.map((log) => {
             const channelName = parseChannelName(log.event);
+            const channelId = channelName ? channelIdsByName.get(channelName.toLowerCase()) : undefined;
             return (
               <tr key={log.id} className="border-b border-zinc-100 dark:border-zinc-900">
                 <td className="py-2">{parseEventDescription(log.event)}</td>
                 <td className="py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span>{log.memberName ?? "-"}</span>
-                    {log.memberID && <CopyBox value={log.memberID} />}
+                    {log.memberID && <CopyIconButton value={log.memberID} />}
                   </div>
                 </td>
-                <td className="py-2">{channelName && <CopyBox value={channelName} />}</td>
+                <td className="py-2">
+                  {channelName &&
+                    (channelId ? (
+                      <a
+                        href={`https://discord.com/channels/${serverID}/${channelId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-amber-600 hover:text-amber-700"
+                      >
+                        {channelName}
+                      </a>
+                    ) : (
+                      <span>{channelName}</span>
+                    ))}
+                </td>
                 <td className="py-2 whitespace-nowrap">{formatLogDate(log.createdAt)}</td>
               </tr>
             );
