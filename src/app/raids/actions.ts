@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { Raid, Signup } from "@/lib/models";
-import { sendGuildMessage, createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
-import { refreshRaidEmbed } from "@/lib/botInternalApi";
+import { createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
+import { refreshRaidEmbed, initRaidEmbed, pingRaid, archiveRaidChannel, type PingType } from "@/lib/botInternalApi";
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
 import { requireRaidAccess } from "@/lib/requireRaidAccess";
@@ -22,25 +22,25 @@ export async function setSignupConfirmed(raidID: number, signupID: number, confi
   revalidatePath(`/raids/${raidID}/roster`);
 }
 
-// NOTE: these all post a "+"-prefixed text command into the raid channel,
-// mirroring the old PHP site -- but the bot's message-command handler was
-// fully removed during its slash-command rewrite (functions/messages.js's
-// handle() is now an empty stub), so none of these actually do anything
-// anymore. "refresh" is the one exception, wired up below to the bot's new
-// internal API instead. The rest are left as-is pending the same treatment.
-const COMMAND_MESSAGES: Record<string, string> = {
-  pingall: "+pingraid",
-  pingconfirmed: "+ping confirmed",
-  pingnoreserve: "+noreserve",
-  pingunsigned: "+unsigned",
-  dupe: "+dupe",
-  archive: "+archive",
+const PING_TYPES: Record<string, PingType> = {
+  pingall: "all",
+  pingconfirmed: "confirmed",
+  pingnoreserve: "noreserve",
 };
 
-// Mirrors RaidController::command().
+// Mirrors RaidController::command(). These used to post "+"-prefixed text
+// commands into the raid channel, matching the old PHP site -- but the
+// bot's message-command handler was fully removed during its
+// slash-command rewrite (functions/messages.js's handle() is now an empty
+// stub), so none of them did anything anymore. Now calls the bot's
+// internal API directly instead. "pingunsigned" isn't included: it needs a
+// second, caller-chosen raid/channel to compare against (see
+// client.notify.getUnsigned in the bot repo), which there's no UI for yet.
+// "dupe" is its own action below (it needs to create a whole new raid, not
+// just act on the existing one).
 export async function runRaidCommand(
   raidID: number,
-  type: keyof typeof COMMAND_MESSAGES | "refresh"
+  type: "refresh" | "pingall" | "pingconfirmed" | "pingnoreserve" | "archive"
 ) {
   const raid = await Raid.findByPk(raidID);
   if (!raid) {
@@ -50,11 +50,10 @@ export async function runRaidCommand(
 
   if (type === "refresh") {
     await refreshRaidEmbed(raid.channelID);
+  } else if (type === "archive") {
+    await archiveRaidChannel(raid.channelID);
   } else {
-    const message = COMMAND_MESSAGES[type];
-    if (message) {
-      await sendGuildMessage(raid.channelID, message);
-    }
+    await pingRaid(raid.channelID, PING_TYPES[type]);
   }
 
   revalidatePath(`/raids/${raidID}/roster`);
@@ -221,13 +220,58 @@ async function createRaid(
   });
 
   const raid = await Raid.create({ ...raidData, channelID: channel.id });
-  // Also dead (see COMMAND_MESSAGES above) -- and unlike a refresh, creating
-  // the *initial* embed needs a pinned message with sign-up buttons first,
-  // which client.embed.update() alone doesn't create. Not fixed yet: raids
-  // created here don't get a working sign-up embed until that's built too.
-  await sendGuildMessage(raid.channelID, "+embed");
+  await initRaidEmbed(raid.channelID);
 
   return { raidID: raid.id };
+}
+
+// Mirrors slashcommands/raid/dupe.js -- duplicates a raid `days` days out,
+// reusing the same channel-creation path as a fresh raid (category
+// resolution + permission check + embed init) rather than the message-based
+// "+dupe" the bot no longer listens for.
+export async function duplicateRaid(raidID: number, days = 7): Promise<SaveRaidResult> {
+  const original = await Raid.findByPk(raidID);
+  if (!original) {
+    return { error: "Raid not found." };
+  }
+  const discordId = await requireRaidAccess(original);
+
+  const newDate = new Date(original.date + "T00:00:00");
+  newDate.setDate(newDate.getDate() + days);
+  const isoDate = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
+  const dateString = newDate
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .replace(" ", "-");
+  const channelName = `${dateString}-${original.name}`;
+
+  const raidData: RaidFields = {
+    raid: original.raid,
+    name: original.name,
+    title: original.title ?? "",
+    date: isoDate,
+    time: original.time ?? "",
+    description: original.description ?? "",
+    confirmation: Boolean(original.confirmation),
+    softreserve: Boolean(original.softreserve),
+    color: original.color,
+    faction: original.faction ?? null,
+    memberID: discordId,
+    guildID: original.guildID,
+  };
+
+  const result = await createRaid(
+    original.guildID,
+    original.raid,
+    original.faction ?? null,
+    channelName,
+    discordId,
+    raidData
+  );
+
+  if (!result.error) {
+    revalidatePath(`/dashboard/${original.guildID}/raids`);
+  }
+  return result;
 }
 
 async function updateRaid(

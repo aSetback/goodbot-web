@@ -48,13 +48,6 @@ export default async function RaidsIndexPage() {
                 <td className="py-2">{raid.date}</td>
                 <td className="py-2 whitespace-nowrap">
                   <Link
-                    href={`/raids/${raid.id}/settings`}
-                    className="text-amber-600 hover:text-amber-700"
-                  >
-                    Settings
-                  </Link>
-                  <span className="mx-2 text-zinc-300 dark:text-zinc-700">|</span>
-                  <Link
                     href={`/raids/${raid.id}/roster`}
                     className="text-amber-600 hover:text-amber-700"
                   >
@@ -66,6 +59,13 @@ export default async function RaidsIndexPage() {
                     className="text-amber-600 hover:text-amber-700"
                   >
                     Reserves
+                  </Link>
+                  <span className="mx-2 text-zinc-300 dark:text-zinc-700">|</span>
+                  <Link
+                    href={`/raids/${raid.id}/settings`}
+                    className="text-amber-600 hover:text-amber-700"
+                  >
+                    Settings
                   </Link>
                 </td>
               </tr>
