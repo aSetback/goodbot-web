@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { Raid, Signup } from "@/lib/models";
 import { sendGuildMessage, createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
+import { refreshRaidEmbed } from "@/lib/botInternalApi";
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
 import { requireRaidAccess } from "@/lib/requireRaidAccess";
@@ -21,27 +22,39 @@ export async function setSignupConfirmed(raidID: number, signupID: number, confi
   revalidatePath(`/raids/lineup/${raidID}`);
 }
 
+// NOTE: these all post a "+"-prefixed text command into the raid channel,
+// mirroring the old PHP site -- but the bot's message-command handler was
+// fully removed during its slash-command rewrite (functions/messages.js's
+// handle() is now an empty stub), so none of these actually do anything
+// anymore. "refresh" is the one exception, wired up below to the bot's new
+// internal API instead. The rest are left as-is pending the same treatment.
 const COMMAND_MESSAGES: Record<string, string> = {
   pingall: "+pingraid",
   pingconfirmed: "+ping confirmed",
   pingnoreserve: "+noreserve",
   pingunsigned: "+unsigned",
-  refresh: "+embed refresh",
   dupe: "+dupe",
   archive: "+archive",
 };
 
 // Mirrors RaidController::command().
-export async function runRaidCommand(raidID: number, type: keyof typeof COMMAND_MESSAGES) {
+export async function runRaidCommand(
+  raidID: number,
+  type: keyof typeof COMMAND_MESSAGES | "refresh"
+) {
   const raid = await Raid.findByPk(raidID);
   if (!raid) {
     throw new Error("Raid not found.");
   }
   await requireRaidAccess(raid);
 
-  const message = COMMAND_MESSAGES[type];
-  if (message) {
-    await sendGuildMessage(raid.channelID, message);
+  if (type === "refresh") {
+    await refreshRaidEmbed(raid.channelID);
+  } else {
+    const message = COMMAND_MESSAGES[type];
+    if (message) {
+      await sendGuildMessage(raid.channelID, message);
+    }
   }
 
   revalidatePath(`/raids/lineup/${raidID}`);
@@ -225,6 +238,10 @@ async function createRaid(
   });
 
   const raid = await Raid.create({ ...raidData, channelID: channel.id });
+  // Also dead (see COMMAND_MESSAGES above) -- and unlike a refresh, creating
+  // the *initial* embed needs a pinned message with sign-up buttons first,
+  // which client.embed.update() alone doesn't create. Not fixed yet: raids
+  // created here don't get a working sign-up embed until that's built too.
   await sendGuildMessage(raid.channelID, "+embed");
 
   return { raidID: raid.id };
@@ -246,7 +263,7 @@ async function updateRaid(
   }
 
   await raid.update(raidData);
-  await sendGuildMessage(raid.channelID, "+embed refresh");
+  await refreshRaidEmbed(raid.channelID);
 
   return { raidID: raid.id };
 }
