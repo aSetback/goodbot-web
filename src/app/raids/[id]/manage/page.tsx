@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { Raid, Settings } from "@/lib/models";
-import { getGuildChannel } from "@/lib/discord";
+import { getGuildChannel, getUserGuilds, isGuildAdmin } from "@/lib/discord";
 import { RaidForm } from "../../RaidForm";
 import { CommandButtons } from "./CommandButtons";
 
@@ -15,6 +17,15 @@ export default async function ManageRaidPage({
     notFound();
   }
 
+  const session = await auth();
+  if (!session?.accessToken) {
+    notFound();
+  }
+  const guilds = await getUserGuilds(session.accessToken);
+  if (!guilds.some((guild) => guild.id === raid.guildID && isGuildAdmin(guild))) {
+    notFound();
+  }
+
   const [channel, settings] = await Promise.all([
     getGuildChannel(raid.channelID),
     Settings.findOne({ where: { guildID: raid.guildID } }),
@@ -25,6 +36,12 @@ export default async function ManageRaidPage({
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
         Manage Raid &mdash; {raid.title || raid.name}
       </h1>
+      <Link
+        href={`/dashboard/${raid.guildID}/raids`}
+        className="text-sm text-amber-600 hover:text-amber-700"
+      >
+        &larr; Back
+      </Link>
 
       <div className="mt-4">
         <CommandButtons raidID={raid.id} />

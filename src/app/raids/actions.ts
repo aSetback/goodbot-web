@@ -5,6 +5,7 @@ import { Raid, Signup } from "@/lib/models";
 import { sendGuildMessage, createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
+import { requireGuildAdmin } from "@/lib/requireGuildAdmin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -106,10 +107,19 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
     guildID,
   };
 
-  const result = raidID
-    ? await updateRaid(raidID, channelName, raidData)
-    : await createRaid(guildID, raidType, faction, channelName, session.discordId, raidData);
+  if (raidID) {
+    await requireGuildAdmin(guildID);
+    const result = await updateRaid(raidID, channelName, raidData);
+    if (result.error) {
+      return result;
+    }
+    // Edits are reached from the guild-scoped dashboard raid list, not the
+    // personal cross-guild /raids list -- send the admin back there.
+    revalidatePath(`/dashboard/${guildID}/raids`);
+    redirect(`/dashboard/${guildID}/raids`);
+  }
 
+  const result = await createRaid(guildID, raidType, faction, channelName, session.discordId, raidData);
   if (result.error) {
     return result;
   }

@@ -68,6 +68,7 @@ export default async function DashboardRaidsPage({
             <th className="py-2 font-medium">Date</th>
             <th className="py-2 font-medium">Raid Type</th>
             <th className="py-2 font-medium">Raid Leader</th>
+            <th className="py-2 font-medium" />
           </tr>
         </thead>
         <tbody>
@@ -76,6 +77,14 @@ export default async function DashboardRaidsPage({
               <td className="py-2">{raid.date}</td>
               <td className="py-2">{raidTypeName(raid.raid)}</td>
               <td className="py-2">{leaderNames.get(raid.memberID) ?? raid.memberID}</td>
+              <td className="py-2 text-right">
+                <Link
+                  href={`/raids/${raid.id}/manage`}
+                  className="text-amber-600 hover:text-amber-700"
+                >
+                  Edit
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>
