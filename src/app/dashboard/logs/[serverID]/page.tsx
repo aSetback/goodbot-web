@@ -3,8 +3,35 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin } from "@/lib/discord";
 import { Log } from "@/lib/models";
+import { CopyBox } from "@/components/CopyBox";
 
 const PAGE_SIZE = 100;
+
+// The event column is a slash-delimited string like:
+// "Signup: + / Member: Setback (93398761979514880) / Channel: general / Guild: Choo Choo (...)"
+// -- but some (mostly older) rows omit the Member segment, or have extra
+// description segments before Channel/Guild, so this can't be split by
+// fixed position. Member name/ID are also already denormalized onto their
+// own columns, which are more reliable than re-parsing them out of the text.
+function parseEventDescription(event: string): string {
+  return event.split(/\s*\/\s*(?:Member|Channel|Guild):/)[0].trim();
+}
+
+function parseChannelName(event: string): string | null {
+  const match = event.match(/Channel:\s*([^/]+)/);
+  return match ? match[1].trim() : null;
+}
+
+function formatLogDate(date: Date): string {
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const yy = String(date.getFullYear()).slice(-2);
+  const hours24 = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const ampm = hours24 >= 12 ? "PM" : "AM";
+  const hours = hours24 % 12 || 12;
+  return `${mm}/${dd}/${yy} @ ${hours}:${minutes}${ampm}`;
+}
 
 export default async function DashboardLogsPage({
   params,
@@ -36,7 +63,7 @@ export default async function DashboardLogsPage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
         Logs &mdash; {server.name}
       </h1>
@@ -51,13 +78,18 @@ export default async function DashboardLogsPage({
         </thead>
         <tbody>
           {logs.map((log) => {
-            const [event, member, channel] = log.event.split("/");
+            const channelName = parseChannelName(log.event);
             return (
               <tr key={log.id} className="border-b border-zinc-100 dark:border-zinc-900">
-                <td className="py-2">{event}</td>
-                <td className="py-2">{member?.replace("Member: ", "")}</td>
-                <td className="py-2">{channel?.replace("Channel: ", "")}</td>
-                <td className="py-2">{log.createdAt.toLocaleString()}</td>
+                <td className="py-2">{parseEventDescription(log.event)}</td>
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    <span>{log.memberName ?? "-"}</span>
+                    {log.memberID && <CopyBox value={log.memberID} />}
+                  </div>
+                </td>
+                <td className="py-2">{channelName && <CopyBox value={channelName} />}</td>
+                <td className="py-2 whitespace-nowrap">{formatLogDate(log.createdAt)}</td>
               </tr>
             );
           })}

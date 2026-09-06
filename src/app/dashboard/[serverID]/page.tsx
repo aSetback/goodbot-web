@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin, goodBotInstalled } from "@/lib/discord";
 
 const LINKS = [
-  { href: "setup", label: "Set-up" },
   { href: "settings", label: "Settings" },
   { href: "logs", label: "Logs" },
 ];
@@ -48,6 +47,12 @@ export default async function DashboardServerPage({
     <div className="mx-auto w-full max-w-2xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{server.name}</h1>
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Link
+          href={`/dashboard/${serverID}/raids`}
+          className="rounded border border-zinc-200 px-4 py-6 text-center font-medium text-zinc-700 transition-colors hover:border-amber-600 hover:text-amber-600 dark:border-zinc-800 dark:text-zinc-300"
+        >
+          Raids
+        </Link>
         {LINKS.map((link) => (
           <Link
             key={link.href}

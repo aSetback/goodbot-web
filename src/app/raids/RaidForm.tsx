@@ -2,26 +2,7 @@
 
 import { useActionState } from "react";
 import { saveRaid } from "./actions";
-
-const RAIDS_CATALOG: Record<string, Record<string, string>> = {
-  Classic: {
-    mc: "Molten Core",
-    ony: "Onyxia",
-    bwl: "Blackwing Lair",
-    zg: "Zul'Gurub",
-    aq40: "Temple of Ahn'Qiraj",
-    aq20: "Ruins of Ahn'Qiraj",
-    naxx: "Naxxramas",
-  },
-  "Burning Crusade": {
-    kara: "Karazhan",
-    gl: "Gruul's Lair",
-    ssc: "Serpentshrine Cavern",
-    tk: "Tempest Keep",
-    bt: "Black Temple",
-    sw: "Sunwell",
-  },
-};
+import { RAIDS_CATALOG } from "@/lib/raidsCatalog";
 
 const inputClass =
   "w-full rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900";
