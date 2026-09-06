@@ -5,16 +5,17 @@ import { Raid, Signup } from "@/lib/models";
 import { sendGuildMessage, createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
-import { requireGuildAdmin } from "@/lib/requireGuildAdmin";
+import { requireRaidAccess } from "@/lib/requireRaidAccess";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 // Mirrors RaidController::confirm()/unconfirm().
 export async function setSignupConfirmed(raidID: number, signupID: number, confirmed: boolean) {
-  const session = await auth();
-  if (!session?.discordId) {
-    throw new Error("Not signed in.");
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
   }
+  await requireRaidAccess(raid);
 
   await Signup.update({ confirmed }, { where: { id: signupID } });
   revalidatePath(`/raids/lineup/${raidID}`);
@@ -32,15 +33,11 @@ const COMMAND_MESSAGES: Record<string, string> = {
 
 // Mirrors RaidController::command().
 export async function runRaidCommand(raidID: number, type: keyof typeof COMMAND_MESSAGES) {
-  const session = await auth();
-  if (!session?.discordId) {
-    throw new Error("Not signed in.");
-  }
-
   const raid = await Raid.findByPk(raidID);
   if (!raid) {
     throw new Error("Raid not found.");
   }
+  await requireRaidAccess(raid);
 
   const message = COMMAND_MESSAGES[type];
   if (message) {
@@ -108,7 +105,11 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
   };
 
   if (raidID) {
-    await requireGuildAdmin(guildID);
+    const existingRaid = await Raid.findByPk(raidID);
+    if (!existingRaid) {
+      return { error: "Raid not found." };
+    }
+    await requireRaidAccess(existingRaid);
     const result = await updateRaid(raidID, channelName, raidData);
     if (result.error) {
       return result;

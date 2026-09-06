@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { Raid, Signup, Character } from "@/lib/models";
+import { getUserGuilds } from "@/lib/discord";
+import { hasRaidAccess } from "@/lib/requireRaidAccess";
+import { RaidTabs } from "../../RaidTabs";
 import { ConfirmButtons } from "./ConfirmButtons";
 import { RefreshChannelButton } from "./RefreshChannelButton";
 
@@ -24,6 +28,15 @@ export default async function RaidLineupPage({
     notFound();
   }
 
+  const session = await auth();
+  if (!session?.accessToken || !session.discordId) {
+    notFound();
+  }
+  const guilds = await getUserGuilds(session.accessToken);
+  if (!hasRaidAccess(guilds, raid, session.discordId)) {
+    notFound();
+  }
+
   const signups = await Signup.findAll({
     where: { raidID: raid.id, signup: "yes" },
     include: [{ model: Character, as: "character" }],
@@ -41,8 +54,7 @@ export default async function RaidLineupPage({
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Manage Lineup</h1>
-        <h2 className="mt-1 text-lg text-zinc-700 dark:text-zinc-300">{raid.name}</h2>
+        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{raid.name}</h1>
         <p className="text-sm text-zinc-500">
           {new Date(raid.date + "T00:00:00").toLocaleDateString("en-US", {
             month: "long",
@@ -51,12 +63,14 @@ export default async function RaidLineupPage({
           })}
         </p>
         <Link
-          href={`/raids/${raid.id}/manage`}
-          className="mt-2 inline-block text-sm text-amber-600 hover:text-amber-700"
+          href={`/dashboard/${raid.guildID}/raids`}
+          className="text-sm text-amber-600 hover:text-amber-700"
         >
-          Edit Raid &rarr;
+          &larr; Back
         </Link>
       </div>
+
+      <RaidTabs raidID={raid.id} active="roster" />
 
       {ROLES.map(({ role, label }) => {
         const roleRows = rows

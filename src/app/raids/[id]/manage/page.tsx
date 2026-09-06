@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { Raid, Settings } from "@/lib/models";
-import { getGuildChannel, getUserGuilds, isGuildAdmin } from "@/lib/discord";
+import { getGuildChannel, getUserGuilds } from "@/lib/discord";
+import { hasRaidAccess } from "@/lib/requireRaidAccess";
 import { RaidForm } from "../../RaidForm";
+import { RaidTabs } from "../../RaidTabs";
 import { CommandButtons } from "./CommandButtons";
 
 export default async function ManageRaidPage({
@@ -18,11 +20,11 @@ export default async function ManageRaidPage({
   }
 
   const session = await auth();
-  if (!session?.accessToken) {
+  if (!session?.accessToken || !session.discordId) {
     notFound();
   }
   const guilds = await getUserGuilds(session.accessToken);
-  if (!guilds.some((guild) => guild.id === raid.guildID && isGuildAdmin(guild))) {
+  if (!hasRaidAccess(guilds, raid, session.discordId)) {
     notFound();
   }
 
@@ -33,17 +35,23 @@ export default async function ManageRaidPage({
 
   return (
     <div className="mx-auto w-full max-w-xl px-6 py-12">
-      <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-        Manage Raid &mdash; {raid.title || raid.name}
-      </h1>
-      <Link
-        href={`/dashboard/${raid.guildID}/raids`}
-        className="text-sm text-amber-600 hover:text-amber-700"
-      >
-        &larr; Back
-      </Link>
+      <div>
+        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+          {raid.title || raid.name}
+        </h1>
+        <Link
+          href={`/dashboard/${raid.guildID}/raids`}
+          className="text-sm text-amber-600 hover:text-amber-700"
+        >
+          &larr; Back
+        </Link>
+      </div>
 
-      <div className="mt-4">
+      <div className="mt-6">
+        <RaidTabs raidID={raid.id} active="settings" />
+      </div>
+
+      <div className="mt-6">
         <CommandButtons raidID={raid.id} />
       </div>
 

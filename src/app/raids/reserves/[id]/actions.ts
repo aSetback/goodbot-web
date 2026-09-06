@@ -1,7 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { Signup, RaidReserve } from "@/lib/models";
+import { Raid, Signup, RaidReserve } from "@/lib/models";
+import { requireRaidAccess } from "@/lib/requireRaidAccess";
 import { revalidatePath } from "next/cache";
 
 // Mirrors GoodBotController::reserve(), used by the admin-facing raid
@@ -11,6 +12,12 @@ export async function saveReserve(raidID: number, signupID: number, itemID: numb
   if (!session?.discordId) {
     throw new Error("Not signed in.");
   }
+
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
+  }
+  await requireRaidAccess(raid);
 
   const signup = await Signup.findByPk(signupID);
   if (!signup) {
