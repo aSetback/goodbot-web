@@ -7,6 +7,7 @@ const COMMANDS: { type: Parameters<typeof runRaidCommand>[1]; label: string }[] 
   { type: "pingall", label: "Ping Raid" },
   { type: "pingconfirmed", label: "Ping Confirmed" },
   { type: "pingnoreserve", label: "Ping No Reserve" },
+  { type: "pingunsigned", label: "Ping Unsigned" },
   { type: "archive", label: "Archive" },
 ];
 

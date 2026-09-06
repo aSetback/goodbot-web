@@ -46,3 +46,11 @@ export async function pingRaid(channelID: string, type: PingType): Promise<void>
 export async function archiveRaidChannel(channelID: string): Promise<void> {
   await callBotApi("/raid/archive", { channelID });
 }
+
+// Pings whoever signed up for the raid in `previousChannelID` but hasn't
+// signed up for the raid in `channelID` -- mirrors slashcommands/raid/
+// unsigned.js, and what dupe.js does automatically right after duplicating
+// a raid.
+export async function pingUnsigned(channelID: string, previousChannelID: string): Promise<void> {
+  await callBotApi("/raid/ping-unsigned", { channelID, previousChannelID });
+}

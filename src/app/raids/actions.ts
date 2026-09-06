@@ -1,9 +1,17 @@
 "use server";
 
+import { Op } from "sequelize";
 import { auth } from "@/auth";
 import { Raid, Signup } from "@/lib/models";
 import { createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
-import { refreshRaidEmbed, initRaidEmbed, pingRaid, archiveRaidChannel, type PingType } from "@/lib/botInternalApi";
+import {
+  refreshRaidEmbed,
+  initRaidEmbed,
+  pingRaid,
+  pingUnsigned,
+  archiveRaidChannel,
+  type PingType,
+} from "@/lib/botInternalApi";
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
 import { requireRaidAccess } from "@/lib/requireRaidAccess";
@@ -33,14 +41,11 @@ const PING_TYPES: Record<string, PingType> = {
 // bot's message-command handler was fully removed during its
 // slash-command rewrite (functions/messages.js's handle() is now an empty
 // stub), so none of them did anything anymore. Now calls the bot's
-// internal API directly instead. "pingunsigned" isn't included: it needs a
-// second, caller-chosen raid/channel to compare against (see
-// client.notify.getUnsigned in the bot repo), which there's no UI for yet.
-// "dupe" is its own action below (it needs to create a whole new raid, not
-// just act on the existing one).
+// internal API directly instead. "dupe" is its own action below (it needs
+// to create a whole new raid, not just act on the existing one).
 export async function runRaidCommand(
   raidID: number,
-  type: "refresh" | "pingall" | "pingconfirmed" | "pingnoreserve" | "archive"
+  type: "refresh" | "pingall" | "pingconfirmed" | "pingnoreserve" | "pingunsigned" | "archive"
 ) {
   const raid = await Raid.findByPk(raidID);
   if (!raid) {
@@ -52,6 +57,24 @@ export async function runRaidCommand(
     await refreshRaidEmbed(raid.channelID);
   } else if (type === "archive") {
     await archiveRaidChannel(raid.channelID);
+  } else if (type === "pingunsigned") {
+    // Mirrors slashcommands/raid/unsigned.js's "compare against a specific
+    // channel" -- but the website has no channel picker, so instead this
+    // finds the most recent earlier raid of the same type in this guild
+    // (the raid this one most likely got duped from, if any).
+    const previousRaid = await Raid.findOne({
+      where: {
+        guildID: raid.guildID,
+        raid: raid.raid,
+        date: { [Op.lt]: raid.date },
+        id: { [Op.ne]: raid.id },
+      },
+      order: [["date", "DESC"]],
+    });
+    if (!previousRaid) {
+      throw new Error("No earlier raid of this type was found to compare against.");
+    }
+    await pingUnsigned(raid.channelID, previousRaid.channelID);
   } else {
     await pingRaid(raid.channelID, PING_TYPES[type]);
   }
@@ -60,7 +83,7 @@ export async function runRaidCommand(
   revalidatePath(`/raids/${raidID}/settings`);
 }
 
-type SaveRaidResult = { error?: string; raidID?: number };
+type SaveRaidResult = { error?: string; raidID?: number; channelID?: string };
 
 type RaidFields = {
   raid: string;
@@ -222,7 +245,7 @@ async function createRaid(
   const raid = await Raid.create({ ...raidData, channelID: channel.id });
   await initRaidEmbed(raid.channelID);
 
-  return { raidID: raid.id };
+  return { raidID: raid.id, channelID: raid.channelID };
 }
 
 // Mirrors slashcommands/raid/dupe.js -- duplicates a raid `days` days out,
@@ -268,7 +291,15 @@ export async function duplicateRaid(raidID: number, days = 7): Promise<SaveRaidR
     raidData
   );
 
-  if (!result.error) {
+  if (!result.error && result.channelID) {
+    // Mirrors dupe.js: automatically ping whoever signed up for the
+    // original raid but hasn't signed up for the new one yet. Best-effort
+    // -- a failure here shouldn't undo an otherwise-successful dupe.
+    try {
+      await pingUnsigned(result.channelID, original.channelID);
+    } catch (error) {
+      console.error("Failed to auto-ping unsigned after dupe", error);
+    }
     revalidatePath(`/dashboard/${original.guildID}/raids`);
   }
   return result;
