@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { Raid, Signup } from "@/lib/models";
 import { sendGuildMessage, createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
 import { resolveRaidCategory } from "@/lib/raidChannel";
+import { normalizeRaidType } from "@/lib/raidsCatalog";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -115,6 +116,82 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
 
   revalidatePath("/raids");
   redirect("/raids");
+}
+
+function formatDateOnly(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Mirrors the date parsing in functions/raid.js's createRaidChannel(): a
+// free-text "Mon-DD" string (e.g. "Jun-15"), forced onto the current year,
+// rolled to next year if that's already in the past.
+function parseBotStyleRaidDate(dateString: string): Date | null {
+  const [monthPart, dayPart] = dateString.split("-");
+  if (!monthPart || !dayPart) return null;
+  const parsed = new Date(Date.parse(`${monthPart} ${dayPart}`));
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setFullYear(new Date().getFullYear());
+  if (parsed.getTime() < Date.now()) {
+    parsed.setFullYear(parsed.getFullYear() + 1);
+  }
+  return parsed;
+}
+
+// Mirrors the bot's /raid slash command modal (slashcommands/raid/raid.js)
+// -- the same 4 fields (name, free-text date, free-text raid type, optional
+// faction), the same channel-name convention ("<dateString>-<name>"), and
+// the same defaults (no title/time/description, color #02a64f) it leaves
+// the DB record with.
+export async function createQuickRaid(
+  serverID: string,
+  formData: FormData
+): Promise<SaveRaidResult> {
+  const session = await auth();
+  if (!session?.discordId) {
+    return { error: "Not signed in." };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const dateString = String(formData.get("dateString") ?? "").trim();
+  const raidTypeRaw = String(formData.get("raidType") ?? "").trim();
+  const factionRaw = String(formData.get("faction") ?? "").trim();
+
+  if (!name || !dateString || !raidTypeRaw) {
+    return { error: "Raid name, date, and type are required." };
+  }
+
+  const parsedDate = parseBotStyleRaidDate(dateString);
+  if (!parsedDate) {
+    return { error: `Could not parse raid date "${dateString}". Use a format like Jun-15.` };
+  }
+
+  const raidType = normalizeRaidType(raidTypeRaw);
+  const faction = factionRaw ? factionRaw.toLowerCase() : null;
+  const channelName = `${dateString}-${name}`;
+
+  const raidData: RaidFields = {
+    raid: raidType,
+    name,
+    title: "",
+    date: formatDateOnly(parsedDate),
+    time: "",
+    description: "",
+    confirmation: false,
+    softreserve: false,
+    color: "#02a64f",
+    faction,
+    memberID: session.discordId,
+    guildID: serverID,
+  };
+
+  const result = await createRaid(serverID, raidType, faction, channelName, session.discordId, raidData);
+  if (!result.error) {
+    revalidatePath(`/dashboard/${serverID}/raids`);
+  }
+  return result;
 }
 
 async function createRaid(

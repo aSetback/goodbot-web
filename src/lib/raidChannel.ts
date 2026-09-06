@@ -28,7 +28,9 @@ export async function resolveRaidCategory(
   }
 
   const channels = await getGuildChannels(guildID);
-  const category = channels.find((channel) => channel.name === categoryName) ?? null;
+  const normalizedCategoryName = categoryName.toLowerCase().trim();
+  const category =
+    channels.find((channel) => channel.name.toLowerCase() === normalizedCategoryName) ?? null;
   if (!category) {
     return null;
   }

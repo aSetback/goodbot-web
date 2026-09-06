@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin, getGuildMember } from "@/lib/discord";
 import { Raid } from "@/lib/models";
 import { raidTypeName } from "@/lib/raidsCatalog";
+import { AddRaidModal } from "./AddRaidModal";
 
 export default async function DashboardRaidsPage({
   params,
@@ -39,16 +40,19 @@ export default async function DashboardRaidsPage({
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-12">
-      <div>
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-          Raids &mdash; {server.name}
-        </h1>
-        <Link
-          href={`/dashboard/${serverID}`}
-          className="text-sm text-amber-600 hover:text-amber-700"
-        >
-          &larr; Back
-        </Link>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+            Raids &mdash; {server.name}
+          </h1>
+          <Link
+            href={`/dashboard/${serverID}`}
+            className="text-sm text-amber-600 hover:text-amber-700"
+          >
+            &larr; Back
+          </Link>
+        </div>
+        <AddRaidModal serverID={serverID} />
       </div>
 
       <table className="mt-6 w-full text-left text-sm">
