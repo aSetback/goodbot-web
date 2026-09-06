@@ -18,7 +18,7 @@ export async function SiteHeader() {
             Home
           </Link>
           <a
-            href="http://discord.goodbot.me"
+            href="https://discord.gg/4tG8Ab2Hub"
             className="hover:text-black dark:hover:text-zinc-50"
           >
             Support

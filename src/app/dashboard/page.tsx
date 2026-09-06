@@ -12,7 +12,7 @@ export default async function DashboardServerSelectPage() {
   const guilds = (await getUserGuilds(session.accessToken)).filter(isGuildAdmin);
 
   return (
-    <div className="mx-auto w-full max-w-lg px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
         Please select a server you have administrative rights on
       </h1>

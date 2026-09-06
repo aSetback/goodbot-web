@@ -29,7 +29,7 @@ const FEATURES = [
     body: (
       <>
         The{" "}
-        <a href="http://discord.goodbot.me" className="underline hover:no-underline">
+        <a href="https://discord.gg/4tG8Ab2Hub" className="underline hover:no-underline">
           development discord
         </a>{" "}
         has multiple developers and experienced users who can help you work through whatever

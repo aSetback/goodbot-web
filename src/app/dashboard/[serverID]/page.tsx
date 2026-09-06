@@ -27,7 +27,7 @@ export default async function DashboardServerPage({
 
   if (!(await goodBotInstalled(serverID))) {
     return (
-      <div className="mx-auto w-full max-w-lg px-6 py-16 text-center">
+      <div className="mx-auto w-full max-w-5xl px-6 py-16 text-center">
         <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
           It looks like GoodBot is not installed on this server.
         </h1>
@@ -44,7 +44,7 @@ export default async function DashboardServerPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{server.name}</h1>
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link

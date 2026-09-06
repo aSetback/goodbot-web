@@ -39,7 +39,7 @@ export default async function DashboardRaidsPage({
   const leaderNames = new Map(leaderEntries);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">

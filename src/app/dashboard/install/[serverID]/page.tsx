@@ -1,6 +1,6 @@
 export default function DashboardInstallPage() {
   return (
-    <div className="mx-auto w-full max-w-lg px-6 py-16 text-center">
+    <div className="mx-auto w-full max-w-5xl px-6 py-16 text-center">
       <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
         It looks like GoodBot is not installed on this server.
       </h1>

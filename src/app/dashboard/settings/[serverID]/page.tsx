@@ -29,11 +29,11 @@ export default async function DashboardSettingsPage({
   const saveAction = saveDashboardSettings.bind(null, serverID);
 
   return (
-    <div className="mx-auto w-full max-w-lg px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
         Settings &mdash; {server.name}
       </h1>
-      <form action={saveAction} className="mt-6 flex flex-col gap-4">
+      <form action={saveAction} className="mt-6 flex max-w-lg flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm text-zinc-500" htmlFor="faction">
             Faction
