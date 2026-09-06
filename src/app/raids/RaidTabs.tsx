@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const TABS = [
-  { key: "settings", label: "Settings", href: (id: number) => `/raids/${id}/manage` },
-  { key: "roster", label: "Roster", href: (id: number) => `/raids/lineup/${id}` },
-  { key: "reserves", label: "Reserves", href: (id: number) => `/raids/reserves/${id}` },
+  { key: "settings", label: "Settings", href: (id: number) => `/raids/${id}/settings` },
+  { key: "roster", label: "Roster", href: (id: number) => `/raids/${id}/roster` },
+  { key: "reserves", label: "Reserves", href: (id: number) => `/raids/${id}/reserves` },
 ] as const;
 
 export function RaidTabs({

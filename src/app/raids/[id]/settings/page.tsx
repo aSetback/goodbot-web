@@ -8,7 +8,7 @@ import { RaidForm } from "../../RaidForm";
 import { RaidTabs } from "../../RaidTabs";
 import { CommandButtons } from "./CommandButtons";
 
-export default async function ManageRaidPage({
+export default async function RaidSettingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -34,7 +34,7 @@ export default async function ManageRaidPage({
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-xl px-6 py-12">
+    <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <div>
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
           {raid.title || raid.name}
@@ -55,7 +55,7 @@ export default async function ManageRaidPage({
         <CommandButtons raidID={raid.id} />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 max-w-xl">
         <RaidForm
           guildID={raid.guildID}
           faction={settings?.faction ?? null}

@@ -15,7 +15,7 @@ const ROLES: { role: string; label: string }[] = [
   { role: "dps", label: "DPS" },
 ];
 
-export default async function RaidLineupPage({
+export default async function RaidRosterPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -52,7 +52,7 @@ export default async function RaidLineupPage({
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-12">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <div>
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{raid.name}</h1>
         <p className="text-sm text-zinc-500">

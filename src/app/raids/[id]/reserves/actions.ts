@@ -35,5 +35,5 @@ export async function saveReserve(raidID: number, signupID: number, itemID: numb
     await reserve.save();
   }
 
-  revalidatePath(`/raids/reserves/${raidID}`);
+  revalidatePath(`/raids/${raidID}/reserves`);
 }

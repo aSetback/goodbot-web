@@ -43,7 +43,7 @@ export default async function AdminReservesPage({
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-12">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <div>
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
           {(raid.name || raid.raid) + " " + raid.date}

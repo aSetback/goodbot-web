@@ -19,7 +19,7 @@ export async function setSignupConfirmed(raidID: number, signupID: number, confi
   await requireRaidAccess(raid);
 
   await Signup.update({ confirmed }, { where: { id: signupID } });
-  revalidatePath(`/raids/lineup/${raidID}`);
+  revalidatePath(`/raids/${raidID}/roster`);
 }
 
 // NOTE: these all post a "+"-prefixed text command into the raid channel,
@@ -57,8 +57,8 @@ export async function runRaidCommand(
     }
   }
 
-  revalidatePath(`/raids/lineup/${raidID}`);
-  revalidatePath(`/raids/${raidID}/manage`);
+  revalidatePath(`/raids/${raidID}/roster`);
+  revalidatePath(`/raids/${raidID}/settings`);
 }
 
 type SaveRaidResult = { error?: string; raidID?: number };
