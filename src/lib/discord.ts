@@ -58,7 +58,15 @@ async function userRequest<T>(endpoint: string, accessToken: string): Promise<T>
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  return res.json() as Promise<T>;
+  const body = await res.json();
+  if (!res.ok) {
+    // A bad/expired access token (or a revoked app grant) lands here even
+    // after auth.ts's proactive refresh -- fail with something diagnosable
+    // instead of letting callers blow up trying to use an error object
+    // (e.g. {message, code}) as if it were the expected array/record shape.
+    throw new Error(`Discord API error ${res.status} on ${endpoint}: ${JSON.stringify(body)}`);
+  }
+  return body as T;
 }
 
 // The guilds the signed-in user belongs to, sorted like the PHP OAuth middleware sorted them.

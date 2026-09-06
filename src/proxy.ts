@@ -20,7 +20,12 @@ export default auth((req) => {
     pathname === "/" ||
     isStaticAsset ||
     PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-  if (!isPublic && !req.auth) {
+  // A session can exist (req.auth truthy) with a Discord access token that
+  // failed to refresh -- e.g. the user revoked the app's Discord
+  // authorization. Treat that the same as not being signed in rather than
+  // letting every Discord-API-backed page crash trying to use it.
+  const needsReauth = !req.auth || req.auth.error === "RefreshAccessTokenError";
+  if (!isPublic && needsReauth) {
     const signInUrl = new URL("/signin", req.nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
