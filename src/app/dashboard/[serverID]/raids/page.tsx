@@ -28,28 +28,33 @@ export default async function DashboardRaidsPage({
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  const raids = await Raid.findAll({
-    where: {
-      guildID: serverID,
-      date: { [Op.gte]: today },
-      [Op.or]: [{ archived: null }, { archived: false }],
-    },
-    order: [["date", "ASC"]],
-  });
-
-  const leaderIDs = [...new Set(raids.map((raid) => raid.memberID))];
-  const [leaderEntries, settings, channels] = await Promise.all([
-    Promise.all(
-      leaderIDs.map(async (memberID) => {
-        const member = await getGuildMember(serverID, memberID);
-        return [memberID, member.nick || member.user?.username || memberID] as const;
-      })
-    ),
+  const [allRaids, settings, channels] = await Promise.all([
+    Raid.findAll({
+      where: {
+        guildID: serverID,
+        date: { [Op.gte]: today },
+        [Op.or]: [{ archived: null }, { archived: false }],
+      },
+      order: [["date", "ASC"]],
+    }),
     Settings.findOne({ where: { guildID: serverID } }),
     getGuildChannels(serverID),
   ]);
-  const leaderNames = new Map(leaderEntries);
   const channelNames = new Map(channels.map((channel) => [channel.id, channel.name]));
+
+  // A raid's channel can get deleted directly in Discord without the DB
+  // record being cleaned up (archiving is the only path that updates it) --
+  // there's nothing useful to manage at that point, so leave it out.
+  const raids = allRaids.filter((raid) => channelNames.has(raid.channelID));
+
+  const leaderIDs = [...new Set(raids.map((raid) => raid.memberID))];
+  const leaderEntries = await Promise.all(
+    leaderIDs.map(async (memberID) => {
+      const member = await getGuildMember(serverID, memberID);
+      return [memberID, member.nick || member.user?.username || memberID] as const;
+    })
+  );
+  const leaderNames = new Map(leaderEntries);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
@@ -88,18 +93,14 @@ export default async function DashboardRaidsPage({
               <td className="py-2">{raidTypeName(raid.raid)}</td>
               <td className="py-2">{leaderNames.get(raid.memberID) ?? raid.memberID}</td>
               <td className="py-2">
-                {channelNames.has(raid.channelID) ? (
-                  <a
-                    href={`https://discord.com/channels/${serverID}/${raid.channelID}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-amber-600 hover:text-amber-700"
-                  >
-                    #{channelNames.get(raid.channelID)}
-                  </a>
-                ) : (
-                  <span className="text-zinc-400">-</span>
-                )}
+                <a
+                  href={`https://discord.com/channels/${serverID}/${raid.channelID}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-amber-600 hover:text-amber-700"
+                >
+                  #{channelNames.get(raid.channelID)}
+                </a>
               </td>
               <td className="py-2 text-right whitespace-nowrap">
                 <Link
