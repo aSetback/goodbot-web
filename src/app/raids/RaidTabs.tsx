@@ -4,6 +4,7 @@ const TABS = [
   { key: "roster", label: "Roster", href: (id: number) => `/raids/${id}/roster` },
   { key: "reserves", label: "Reserves", href: (id: number) => `/raids/${id}/reserves` },
   { key: "settings", label: "Settings", href: (id: number) => `/raids/${id}/settings` },
+  { key: "actions", label: "Actions", href: (id: number) => `/raids/${id}/actions` },
 ] as const;
 
 export function RaidTabs({

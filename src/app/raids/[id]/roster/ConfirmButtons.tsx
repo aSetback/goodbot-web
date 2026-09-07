@@ -15,28 +15,17 @@ export function ConfirmButtons({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <span className="flex items-center gap-3">
-      <span className={confirmed ? "text-green-600" : "text-red-600"}>
-        {confirmed ? "Confirmed" : "Unconfirmed"}
-      </span>
-      <button
-        type="button"
-        disabled={isPending}
-        title="Confirm"
-        onClick={() => startTransition(() => setSignupConfirmed(raidID, signupID, true))}
-        className="text-green-600 hover:text-green-700 disabled:opacity-50"
-      >
-        &#128077;
-      </button>
-      <button
-        type="button"
-        disabled={isPending}
-        title="Unconfirm"
-        onClick={() => startTransition(() => setSignupConfirmed(raidID, signupID, false))}
-        className="text-red-600 hover:text-red-700 disabled:opacity-50"
-      >
-        &#128078;
-      </button>
-    </span>
+    <button
+      type="button"
+      disabled={isPending}
+      onClick={() => startTransition(() => setSignupConfirmed(raidID, signupID, !confirmed))}
+      className={
+        confirmed
+          ? "text-green-600 hover:text-green-700 disabled:opacity-50"
+          : "text-red-600 hover:text-red-700 disabled:opacity-50"
+      }
+    >
+      {confirmed ? "Confirmed" : "Unconfirmed"}
+    </button>
   );
 }

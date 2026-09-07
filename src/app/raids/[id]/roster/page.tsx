@@ -98,13 +98,7 @@ export default async function RaidRosterPage({
                       <span className="text-orange-500">({mainName})</span>
                     )}
                   </td>
-                  <td className="py-2 text-right">
-                    <span className="flex items-center justify-end gap-1.5">
-                      <EmojiIcon emoji={emojis[klass]} label={klass} />
-                      <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
-                    </span>
-                  </td>
-                  <td className="py-2 text-right">
+                  <td className="py-2">
                     {raid.confirmation && (
                       <ConfirmButtons
                         raidID={raid.id}
@@ -112,6 +106,12 @@ export default async function RaidRosterPage({
                         confirmed={Boolean(signup.confirmed)}
                       />
                     )}
+                  </td>
+                  <td className="py-2 text-right">
+                    <span className="flex items-center justify-end gap-1.5">
+                      <EmojiIcon emoji={emojis[klass]} label={klass} />
+                      <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -122,9 +122,8 @@ export default async function RaidRosterPage({
 
       <div className="mt-4">
         <p className="text-sm text-zinc-500 italic">
-          New confirmations will not show in the sign-up channel until the embed is refreshed.
-          This can be done via the button, another player signing up, or a raid setting being
-          changed.
+          Confirmations sync to the sign-up channel automatically about 15 seconds after the last
+          change, or immediately via the button below.
         </p>
         <div className="mt-3">
           <RefreshChannelButton raidID={raid.id} />

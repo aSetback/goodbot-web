@@ -3,7 +3,7 @@
 import { Op } from "sequelize";
 import { auth } from "@/auth";
 import { Raid, Signup } from "@/lib/models";
-import { createGuildChannel, getGuildChannel, renameChannel } from "@/lib/discord";
+import { createGuildChannel, getGuildChannel, getGuildChannels, renameChannel } from "@/lib/discord";
 import {
   refreshRaidEmbed,
   initRaidEmbed,
@@ -15,10 +15,14 @@ import {
 import { resolveRaidCategory } from "@/lib/raidChannel";
 import { normalizeRaidType } from "@/lib/raidsCatalog";
 import { requireRaidAccess } from "@/lib/requireRaidAccess";
+import { scheduleRaidEmbedRefresh } from "@/lib/raidEmbedDebounce";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-// Mirrors RaidController::confirm()/unconfirm().
+// Mirrors RaidController::confirm()/unconfirm(). The embed refresh is
+// debounced (see scheduleRaidEmbedRefresh) rather than immediate, so
+// confirming a bunch of players one click at a time still only pushes one
+// embed update instead of one per click.
 export async function setSignupConfirmed(raidID: number, signupID: number, confirmed: boolean) {
   const raid = await Raid.findByPk(raidID);
   if (!raid) {
@@ -27,7 +31,112 @@ export async function setSignupConfirmed(raidID: number, signupID: number, confi
   await requireRaidAccess(raid);
 
   await Signup.update({ confirmed }, { where: { id: signupID } });
+  scheduleRaidEmbedRefresh(raid.id, raid.channelID);
   revalidatePath(`/raids/${raidID}/roster`);
+}
+
+// Confirms/unconfirms every "yes" signup on the raid in one query, so
+// confirming a full roster is one round-trip instead of one click (and one
+// page revalidation, which re-checks Discord guild access) per player --
+// clicking the per-row toggle repeatedly in quick succession is what was
+// crashing the page against Discord's rate limit.
+export async function setAllSignupsConfirmed(raidID: number, confirmed: boolean) {
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
+  }
+  await requireRaidAccess(raid);
+
+  await Signup.update({ confirmed }, { where: { raidID: raid.id, signup: "yes" } });
+  scheduleRaidEmbedRefresh(raid.id, raid.channelID);
+  revalidatePath(`/raids/${raidID}/roster`);
+}
+
+// The most recent earlier raid of the same type in this guild -- used both
+// as the "unsigned" comparison point and as the likely source raid a leader
+// would want to copy confirmations from (there's no explicit "duplicated
+// from" link stored on a raid, so this is the same heuristic dupe.js's
+// auto-ping and pingunsigned already rely on).
+async function findPreviousRaidOfSameType(raid: Raid) {
+  return Raid.findOne({
+    where: {
+      guildID: raid.guildID,
+      raid: raid.raid,
+      date: { [Op.lt]: raid.date },
+      id: { [Op.ne]: raid.id },
+    },
+    order: [["date", "DESC"]],
+  });
+}
+
+// Copies "confirmed" over from whoever's already confirmed in another raid's
+// channel, matched by Discord member ID -- for when the same people are
+// attending again and re-confirming everyone by hand would mean a wave of
+// individual clicks (and page revalidations) against Discord's rate limit.
+// Additive only: it never unconfirms someone, it just fills in matches.
+export async function copyConfirmations(raidID: number, sourceChannelID: string) {
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
+  }
+  await requireRaidAccess(raid);
+
+  const sourceRaid = await Raid.findOne({
+    where: { guildID: raid.guildID, channelID: sourceChannelID },
+  });
+  if (!sourceRaid) {
+    throw new Error("Source raid not found.");
+  }
+
+  const [targetSignups, sourceSignups] = await Promise.all([
+    Signup.findAll({ where: { raidID: raid.id, signup: "yes" } }),
+    Signup.findAll({ where: { raidID: sourceRaid.id, signup: "yes", confirmed: true } }),
+  ]);
+  const confirmedMemberIDs = new Set(sourceSignups.map((signup) => signup.memberID));
+  const idsToConfirm = targetSignups
+    .filter((signup) => confirmedMemberIDs.has(signup.memberID))
+    .map((signup) => signup.id);
+
+  if (idsToConfirm.length > 0) {
+    await Signup.update({ confirmed: true }, { where: { id: { [Op.in]: idsToConfirm } } });
+    scheduleRaidEmbedRefresh(raid.id, raid.channelID);
+  }
+  revalidatePath(`/raids/${raidID}/roster`);
+}
+
+export type CopyConfirmSource = { channelID: string; label: string };
+
+// The channel picker's option list (other raids in this guild whose channel
+// still exists) plus which one to preselect -- the raid this one was most
+// likely duplicated from, per findPreviousRaidOfSameType() above.
+export async function getCopyConfirmSources(
+  raidID: number
+): Promise<{ options: CopyConfirmSource[]; defaultChannelID: string | null }> {
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
+  }
+  await requireRaidAccess(raid);
+
+  const [otherRaids, channels] = await Promise.all([
+    Raid.findAll({
+      where: { guildID: raid.guildID, id: { [Op.ne]: raid.id } },
+      order: [["date", "DESC"]],
+      limit: 50,
+    }),
+    getGuildChannels(raid.guildID),
+  ]);
+  const channelNames = new Map(channels.map((channel) => [channel.id, channel.name]));
+
+  const options = otherRaids
+    .filter((other) => channelNames.has(other.channelID))
+    .map((other) => ({ channelID: other.channelID, label: `#${channelNames.get(other.channelID)}` }));
+
+  const previousRaid = await findPreviousRaidOfSameType(raid);
+  const defaultChannelID =
+    previousRaid && channelNames.has(previousRaid.channelID) ? previousRaid.channelID : null;
+
+  return { options, defaultChannelID };
 }
 
 const PING_TYPES: Record<string, PingType> = {
@@ -62,15 +171,7 @@ export async function runRaidCommand(
     // channel" -- but the website has no channel picker, so instead this
     // finds the most recent earlier raid of the same type in this guild
     // (the raid this one most likely got duped from, if any).
-    const previousRaid = await Raid.findOne({
-      where: {
-        guildID: raid.guildID,
-        raid: raid.raid,
-        date: { [Op.lt]: raid.date },
-        id: { [Op.ne]: raid.id },
-      },
-      order: [["date", "DESC"]],
-    });
+    const previousRaid = await findPreviousRaidOfSameType(raid);
     if (!previousRaid) {
       throw new Error("No earlier raid of this type was found to compare against.");
     }
