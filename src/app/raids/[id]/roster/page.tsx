@@ -101,15 +101,19 @@ export default async function RaidRosterPage({
           .sort((a, b) => a.class.localeCompare(b.class) || a.order - b.order);
         if (roleRows.length === 0) return null;
 
+        const nameWidth = raid.softreserve ? "w-[40%]" : "w-[50%]";
+        const iconsWidth = raid.softreserve ? "w-[20%]" : "w-[25%]";
+        const statusWidth = raid.softreserve ? "w-[20%]" : "w-[25%]";
+
         return (
           <table key={role} className="w-full table-fixed text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800">
                 <th className="w-8 py-2 font-medium" />
-                <th className="w-[40%] py-2 font-medium">{label}</th>
-                <th className="w-[20%] py-2 font-medium" />
-                <th className="w-[20%] py-2 font-medium" />
-                <th className="w-[20%] py-2 font-medium">Status</th>
+                <th className={`${nameWidth} py-2 font-medium`}>{label}</th>
+                <th className={`${iconsWidth} py-2 font-medium`} />
+                {raid.softreserve && <th className="w-[20%] py-2 font-medium">Reserve</th>}
+                <th className={`${statusWidth} py-2 text-right font-medium`}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -128,24 +132,26 @@ export default async function RaidRosterPage({
                       <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
                     </span>
                   </td>
-                  <td className="py-2 truncate">
-                    {reserveItem ? (
-                      reserveItem.itemID ? (
-                        <a
-                          href={`https://wotlk.wowhead.com/item/${reserveItem.itemID}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-amber-600 hover:text-amber-700"
-                        >
-                          {reserveItem.name}
-                        </a>
+                  {raid.softreserve && (
+                    <td className="py-2 truncate">
+                      {reserveItem ? (
+                        reserveItem.itemID ? (
+                          <a
+                            href={`https://wotlk.wowhead.com/item/${reserveItem.itemID}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-amber-600 hover:text-amber-700"
+                          >
+                            {reserveItem.name}
+                          </a>
+                        ) : (
+                          reserveItem.name
+                        )
                       ) : (
-                        reserveItem.name
-                      )
-                    ) : (
-                      <span className="text-zinc-400">&mdash;</span>
-                    )}
-                  </td>
+                        <span className="text-zinc-400">&mdash;</span>
+                      )}
+                    </td>
+                  )}
                   <td className="py-2 text-right">
                     {raid.confirmation && (
                       <ConfirmButtons

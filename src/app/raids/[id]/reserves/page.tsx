@@ -8,6 +8,7 @@ import { formatRaidDate } from "@/lib/formatRaidDate";
 import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidTabs } from "../../RaidTabs";
 import { ReserveSelect } from "./ReserveSelect";
+import { SoftReserveToggle } from "./SoftReserveToggle";
 
 export default async function AdminReservesPage({
   params,
@@ -60,6 +61,8 @@ export default async function AdminReservesPage({
 
       <RaidTabs raidID={raid.id} active="reserves" />
 
+      <SoftReserveToggle raidID={raid.id} enabled={Boolean(raid.softreserve)} />
+
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -77,6 +80,7 @@ export default async function AdminReservesPage({
                   signupID={signup.id}
                   currentItemID={signup.reserve?.item?.id ?? 0}
                   items={items.map((item) => ({ id: item.id, name: item.name }))}
+                  disabled={!raid.softreserve}
                 />
               </td>
             </tr>

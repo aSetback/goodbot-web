@@ -37,3 +37,18 @@ export async function saveReserve(raidID: number, signupID: number, itemID: numb
 
   revalidatePath(`/raids/${raidID}/reserves`);
 }
+
+// Toggled from the radio at the top of the reserves page -- also mirrored
+// by the checkbox on the raid's Settings form, so keep both in sync.
+export async function setRaidSoftReserve(raidID: number, enabled: boolean) {
+  const raid = await Raid.findByPk(raidID);
+  if (!raid) {
+    throw new Error("Raid not found.");
+  }
+  await requireRaidAccess(raid);
+
+  await raid.update({ softreserve: enabled });
+  revalidatePath(`/raids/${raidID}/reserves`);
+  revalidatePath(`/raids/${raidID}/roster`);
+  revalidatePath(`/raids/${raidID}/settings`);
+}

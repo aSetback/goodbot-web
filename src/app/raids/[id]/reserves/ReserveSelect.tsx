@@ -8,18 +8,20 @@ export function ReserveSelect({
   signupID,
   currentItemID,
   items,
+  disabled,
 }: {
   raidID: number;
   signupID: number;
   currentItemID: number;
   items: { id: number; name: string }[];
+  disabled?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <select
       defaultValue={currentItemID}
-      disabled={isPending}
+      disabled={disabled || isPending}
       className="rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
       onChange={(event) => {
         const itemID = Number(event.target.value);
