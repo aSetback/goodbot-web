@@ -1,5 +1,21 @@
 const DISCORD_API = process.env.BOT_API_URL ?? "https://discord.com/api";
 
+// Discord rate-limits some endpoints (notably /users/@me/guilds) tightly
+// enough that two requests fired close together -- e.g. a double-clicked
+// nav link kicking off two page loads that each fetch guilds -- can 429 the
+// second one. Retry with the server-given backoff instead of letting that
+// surface as an unhandled error that crashes the page.
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(url, init);
+    if (res.status !== 429) return res;
+    const body = await res.clone().json().catch(() => null);
+    const retryAfter = typeof body?.retry_after === "number" ? body.retry_after : 1;
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000 + 50));
+  }
+  return fetch(url, init);
+}
+
 export type DiscordGuild = {
   id: string;
   name: string;
@@ -47,7 +63,7 @@ async function botRequest<T>(
   endpoint: string,
   init?: { method?: string; body?: unknown }
 ): Promise<T> {
-  const res = await fetch(`${DISCORD_API}${endpoint}`, {
+  const res = await fetchWithRetry(`${DISCORD_API}${endpoint}`, {
     method: init?.method ?? (init?.body ? "POST" : "GET"),
     headers: {
       Accept: "application/json",
@@ -61,7 +77,7 @@ async function botRequest<T>(
 
 // Calls made on the signed-in user's behalf (mirrors Controller::apiRequest).
 async function userRequest<T>(endpoint: string, accessToken: string): Promise<T> {
-  const res = await fetch(`${DISCORD_API}${endpoint}`, {
+  const res = await fetchWithRetry(`${DISCORD_API}${endpoint}`, {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,
