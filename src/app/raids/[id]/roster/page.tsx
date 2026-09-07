@@ -94,7 +94,9 @@ export default async function RaidRosterPage({
                   <td className="py-2 w-8 text-zinc-400">{order}</td>
                   <td className="py-2">
                     {signup.player}{" "}
-                    {mainName && <span className="text-orange-500">({mainName})</span>}
+                    {mainName && mainName !== signup.player && (
+                      <span className="text-orange-500">({mainName})</span>
+                    )}
                   </td>
                   <td className="py-2 text-right">
                     <span className="flex items-center justify-end gap-1.5">
