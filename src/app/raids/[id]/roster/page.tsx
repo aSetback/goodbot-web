@@ -118,10 +118,10 @@ export default async function RaidRosterPage({
                 <tr key={signup.id} className="border-b border-zinc-100 dark:border-zinc-900">
                   <td className="py-2 w-8 text-zinc-400">{order}</td>
                   <td className="py-2 truncate">
-                    <span className="inline-flex items-center gap-1.5 align-middle">
+                    <span className="mr-2.5 inline-flex items-center gap-0.5 align-middle">
                       <EmojiIcon emoji={emojis[klass]} label={klass} />
                       <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
-                    </span>{" "}
+                    </span>
                     {signup.player}{" "}
                     {mainName && mainName !== signup.player && (
                       <span className="text-orange-500">({mainName})</span>
