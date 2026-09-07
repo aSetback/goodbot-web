@@ -87,9 +87,8 @@ export default async function RaidRosterPage({
           <table key={role} className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                <th className="py-2 font-medium" colSpan={2}>
-                  {label}
-                </th>
+                <th className="py-2 font-medium" />
+                <th className="py-2 font-medium">{label}</th>
                 <th className="py-2 font-medium" />
                 <th className="py-2 font-medium" />
               </tr>
@@ -100,14 +99,10 @@ export default async function RaidRosterPage({
                   <td className="py-2 w-8 text-zinc-400">{order}</td>
                   <td className="py-2">
                     {signup.player}{" "}
-                    {mainName ? (
-                      <span className="text-orange-500">({mainName})</span>
-                    ) : (
-                      <span className="text-green-600">(main)</span>
-                    )}
+                    {mainName && <span className="text-orange-500">({mainName})</span>}
                   </td>
-                  <td className="py-2">
-                    <span className="flex items-center gap-1.5">
+                  <td className="py-2 text-right">
+                    <span className="flex items-center justify-end gap-1.5">
                       <EmojiIcon emoji={emojis[klass]} label={klass} />
                       <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
                     </span>
