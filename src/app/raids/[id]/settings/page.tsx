@@ -8,7 +8,6 @@ import { formatRaidDate } from "@/lib/formatRaidDate";
 import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidForm } from "../../RaidForm";
 import { RaidTabs } from "../../RaidTabs";
-import { CommandButtons } from "./CommandButtons";
 
 export default async function RaidSettingsPage({
   params,
@@ -54,10 +53,6 @@ export default async function RaidSettingsPage({
 
       <div className="mt-6">
         <RaidTabs raidID={raid.id} active="settings" />
-      </div>
-
-      <div className="mt-6">
-        <CommandButtons raidID={raid.id} />
       </div>
 
       <div className="mt-8 max-w-xl">

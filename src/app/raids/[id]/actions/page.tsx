@@ -4,10 +4,9 @@ import { Raid } from "@/lib/models";
 import { getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
 import { formatRaidDate } from "@/lib/formatRaidDate";
-import { getCopyConfirmSources } from "../../actions";
 import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidTabs } from "../../RaidTabs";
-import { RosterBulkActions } from "./RosterBulkActions";
+import { CommandButtons } from "./CommandButtons";
 
 export default async function RaidActionsPage({
   params,
@@ -31,8 +30,6 @@ export default async function RaidActionsPage({
     notFound();
   }
 
-  const { options, defaultChannelID } = await getCopyConfirmSources(raid.id);
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <div>
@@ -48,17 +45,7 @@ export default async function RaidActionsPage({
 
       <RaidTabs raidID={raid.id} active="actions" />
 
-      {raid.confirmation ? (
-        <RosterBulkActions
-          raidID={raid.id}
-          channelOptions={options}
-          defaultChannelID={defaultChannelID}
-        />
-      ) : (
-        <p className="text-sm text-zinc-500">
-          Turn on confirmation for this raid in Settings to use the bulk confirm actions.
-        </p>
-      )}
+      <CommandButtons raidID={raid.id} />
     </div>
   );
 }
