@@ -22,7 +22,7 @@ export function ReserveSelect({
     <select
       defaultValue={currentItemID}
       disabled={disabled || isPending}
-      className="rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      className="rounded border border-zinc-300 bg-white px-2 py-1 text-sm disabled:cursor-not-allowed disabled:border-dashed disabled:border-zinc-300 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:border-zinc-700 dark:disabled:bg-zinc-950 dark:disabled:text-zinc-600"
       onChange={(event) => {
         const itemID = Number(event.target.value);
         startTransition(() => {

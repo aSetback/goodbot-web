@@ -101,9 +101,7 @@ export default async function RaidRosterPage({
           .sort((a, b) => a.class.localeCompare(b.class) || a.order - b.order);
         if (roleRows.length === 0) return null;
 
-        const nameWidth = raid.softreserve ? "w-[40%]" : "w-[50%]";
-        const iconsWidth = raid.softreserve ? "w-[20%]" : "w-[25%]";
-        const statusWidth = raid.softreserve ? "w-[20%]" : "w-[25%]";
+        const nameWidth = raid.softreserve ? "w-[50%]" : "w-[75%]";
 
         return (
           <table key={role} className="w-full table-fixed text-left text-sm">
@@ -111,9 +109,8 @@ export default async function RaidRosterPage({
               <tr className="border-b border-zinc-200 dark:border-zinc-800">
                 <th className="w-8 py-2 font-medium" />
                 <th className={`${nameWidth} py-2 font-medium`}>{label}</th>
-                <th className={`${iconsWidth} py-2 font-medium`} />
-                {raid.softreserve && <th className="w-[20%] py-2 font-medium">Reserve</th>}
-                <th className={`${statusWidth} py-2 text-right font-medium`}>Status</th>
+                {raid.softreserve && <th className="w-[25%] py-2 font-medium">Reserve</th>}
+                <th className="w-[25%] py-2 text-right font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -121,16 +118,14 @@ export default async function RaidRosterPage({
                 <tr key={signup.id} className="border-b border-zinc-100 dark:border-zinc-900">
                   <td className="py-2 w-8 text-zinc-400">{order}</td>
                   <td className="py-2 truncate">
+                    <span className="inline-flex items-center gap-1.5 align-middle">
+                      <EmojiIcon emoji={emojis[klass]} label={klass} />
+                      <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
+                    </span>{" "}
                     {signup.player}{" "}
                     {mainName && mainName !== signup.player && (
                       <span className="text-orange-500">({mainName})</span>
                     )}
-                  </td>
-                  <td className="py-2">
-                    <span className="flex items-center justify-center gap-1.5">
-                      <EmojiIcon emoji={emojis[klass]} label={klass} />
-                      <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
-                    </span>
                   </td>
                   {raid.softreserve && (
                     <td className="py-2 truncate">

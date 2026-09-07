@@ -94,10 +94,28 @@ async function userRequest<T>(endpoint: string, accessToken: string): Promise<T>
   return body as T;
 }
 
-// The guilds the signed-in user belongs to, sorted like the PHP OAuth middleware sorted them.
-export async function getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
-  const guilds = await userRequest<DiscordGuild[]>("/users/@me/guilds", accessToken);
-  return [...guilds].sort((a, b) => a.name.localeCompare(b.name));
+// Every raid sub-page (roster/reserves/settings/actions) calls this once to
+// check access, so clicking through tabs quickly fires several of these in
+// a row for a guild list that hasn't changed -- the retrying in
+// fetchWithRetry helps once it's rate-limited, but it's better to not ask
+// Discord again at all. Cache by access token (and share the in-flight
+// promise) for a short window so a burst of nav clicks costs one real
+// request instead of one per click.
+const guildsCache = new Map<string, { promise: Promise<DiscordGuild[]>; expiresAt: number }>();
+const GUILDS_CACHE_TTL_MS = 15_000;
+
+export function getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
+  const cached = guildsCache.get(accessToken);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.promise;
+  }
+
+  const promise = userRequest<DiscordGuild[]>("/users/@me/guilds", accessToken).then((guilds) =>
+    [...guilds].sort((a, b) => a.name.localeCompare(b.name))
+  );
+  promise.catch(() => guildsCache.delete(accessToken));
+  guildsCache.set(accessToken, { promise, expiresAt: Date.now() + GUILDS_CACHE_TTL_MS });
+  return promise;
 }
 
 // Discord represents "has every permission" (ADMINISTRATOR-equivalent) as this bitmask.
