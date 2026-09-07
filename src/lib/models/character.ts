@@ -1,4 +1,4 @@
-import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional } from "sequelize";
+import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional, type NonAttribute } from "sequelize";
 import { sequelize } from "@/lib/db";
 
 // Mirrors the GoodBot bot's models/character.js -- same table, same columns.
@@ -15,6 +15,8 @@ export class Character extends Model<InferAttributes<Character>, InferCreationAt
   declare natureResist: CreationOptional<string | null>;
   declare fireResist: CreationOptional<string | null>;
   declare frostResist: CreationOptional<string | null>;
+
+  declare main?: NonAttribute<Character>;
 }
 
 Character.init(

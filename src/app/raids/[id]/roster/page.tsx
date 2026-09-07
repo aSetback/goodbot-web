@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { Raid, Signup, Character } from "@/lib/models";
 import { getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
+import { getClassRoleEmojis } from "@/lib/botInternalApi";
+import { EmojiIcon } from "@/components/EmojiIcon";
 import { RaidTabs } from "../../RaidTabs";
 import { ConfirmButtons } from "./ConfirmButtons";
 import { RefreshChannelButton } from "./RefreshChannelButton";
@@ -37,18 +39,21 @@ export default async function RaidRosterPage({
     notFound();
   }
 
-  const signups = await Signup.findAll({
-    where: { raidID: raid.id, signup: "yes" },
-    include: [{ model: Character, as: "character" }],
-    order: [["id", "ASC"]],
-  });
+  const [signups, emojis] = await Promise.all([
+    Signup.findAll({
+      where: { raidID: raid.id, signup: "yes" },
+      include: [{ model: Character, as: "character", include: [{ model: Character, as: "main" }] }],
+      order: [["id", "ASC"]],
+    }),
+    getClassRoleEmojis(),
+  ]);
 
   const rows = signups.map((signup, index) => ({
     signup,
     order: index + 1,
     class: signup.character?.class ?? "unknown",
     role: signup.character?.role ?? "unknown",
-    isAlt: Boolean(signup.character?.mainID),
+    mainName: signup.character?.main?.name ?? null,
   }));
 
   return (
@@ -90,16 +95,23 @@ export default async function RaidRosterPage({
               </tr>
             </thead>
             <tbody>
-              {roleRows.map(({ signup, class: klass, isAlt, order }) => (
+              {roleRows.map(({ signup, class: klass, role: rowRole, mainName, order }) => (
                 <tr key={signup.id} className="border-b border-zinc-100 dark:border-zinc-900">
                   <td className="py-2 w-8 text-zinc-400">{order}</td>
                   <td className="py-2">
                     {signup.player}{" "}
-                    <span className={isAlt ? "text-orange-500" : "text-green-600"}>
-                      ({isAlt ? "alt" : "main"})
+                    {mainName ? (
+                      <span className="text-orange-500">({mainName})</span>
+                    ) : (
+                      <span className="text-green-600">(main)</span>
+                    )}
+                  </td>
+                  <td className="py-2">
+                    <span className="flex items-center gap-1.5">
+                      <EmojiIcon emoji={emojis[klass]} label={klass} />
+                      <EmojiIcon emoji={emojis[rowRole]} label={rowRole} />
                     </span>
                   </td>
-                  <td className="py-2">{klass}</td>
                   <td className="py-2 text-right">
                     {raid.confirmation && (
                       <ConfirmButtons

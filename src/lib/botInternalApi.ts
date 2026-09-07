@@ -54,3 +54,29 @@ export async function archiveRaidChannel(channelID: string): Promise<void> {
 export async function pingUnsigned(channelID: string, previousChannelID: string): Promise<void> {
   await callBotApi("/raid/ping-unsigned", { channelID, previousChannelID });
 }
+
+export type ClassRoleEmoji = { id: string; animated: boolean };
+
+// The bot's own "GB<name>" custom emojis (see functions/embed.js), keyed by
+// lowercase class/role name -- bot-wide, not guild-specific (see
+// functions/internalApi.js's getClassRoleEmojis()). Cached briefly since
+// these essentially never change.
+export async function getClassRoleEmojis(): Promise<Record<string, ClassRoleEmoji>> {
+  const baseUrl = process.env.INTERNAL_BOT_API_URL;
+  if (!baseUrl) {
+    console.error("INTERNAL_BOT_API_URL is not configured; skipping emoji lookup.");
+    return {};
+  }
+
+  const res = await fetch(`${baseUrl}/emojis`, {
+    headers: { Authorization: `Bearer ${process.env.INTERNAL_BOT_API_SECRET}` },
+    next: { revalidate: 300 },
+  });
+  if (!res.ok) return {};
+  return res.json();
+}
+
+export function classRoleEmojiUrl(emoji: ClassRoleEmoji | undefined): string | null {
+  if (!emoji) return null;
+  return `https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? "gif" : "png"}`;
+}

@@ -15,5 +15,6 @@ RaidReserve.belongsTo(Signup, { foreignKey: "signupID" });
 RaidReserve.belongsTo(ReserveItem, { as: "item", targetKey: "id", foreignKey: "reserveItemID" });
 
 Signup.belongsTo(Character, { as: "character", targetKey: "id", foreignKey: "characterID" });
+Character.belongsTo(Character, { as: "main", targetKey: "id", foreignKey: "mainID" });
 
 export { Raid, Signup, RaidReserve, ReserveItem, Character, Settings, RaidCategory, RaidHash, Log, Guild };
