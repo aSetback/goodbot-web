@@ -3,8 +3,17 @@ const DISCORD_API = process.env.BOT_API_URL ?? "https://discord.com/api";
 export type DiscordGuild = {
   id: string;
   name: string;
+  icon: string | null;
   permissions: string | number;
 };
+
+// Builds the CDN URL for a guild's icon (Discord hashes animated icons with
+// an "a_" prefix and serves those as .gif, everything else as .png).
+export function guildIconUrl(guild: Pick<DiscordGuild, "id" | "icon">): string | null {
+  if (!guild.icon) return null;
+  const ext = guild.icon.startsWith("a_") ? "gif" : "png";
+  return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${ext}`;
+}
 
 export type DiscordGuildMember = {
   user?: { id: string; username: string };
@@ -85,6 +94,30 @@ export function isGuildAdmin(guild: Pick<DiscordGuild, "permissions">): boolean 
 export async function goodBotInstalled(guildId: string): Promise<boolean> {
   const server = await botRequest<{ code?: number }>(`/guilds/${guildId}`);
   return server.code === undefined;
+}
+
+export type GuildMemberSearchResult = {
+  id: string;
+  name: string;
+};
+
+// Discord's member search matches on username or nickname prefix.
+export async function searchGuildMembers(
+  guildId: string,
+  query: string,
+  limit = 10
+): Promise<GuildMemberSearchResult[]> {
+  if (!query.trim()) return [];
+  const members = await botRequest<DiscordGuildMember[]>(
+    `/guilds/${guildId}/members/search?query=${encodeURIComponent(query)}&limit=${limit}`
+  );
+  if (!Array.isArray(members)) return [];
+  return members
+    .filter((member) => member.user)
+    .map((member) => ({
+      id: member.user!.id,
+      name: member.nick || member.user!.username,
+    }));
 }
 
 export async function getGuildMember(

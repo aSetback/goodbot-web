@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin } from "@/lib/discord";
 import { Settings } from "@/lib/models";
 import { EXPANSION_LABELS } from "@/lib/raidsCatalog";
+import { GuildIcon } from "@/components/GuildIcon";
 import { saveDashboardSettings } from "../../actions";
 import { NA_SERVER_LIST, EU_SERVER_LIST } from "../../wowServers";
 
@@ -32,6 +33,9 @@ export default async function DashboardSettingsPage({
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
+      <div className="mb-4 flex justify-center">
+        <GuildIcon guild={server} />
+      </div>
       <div>
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
           Settings &mdash; {server.name}

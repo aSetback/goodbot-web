@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { Raid, Settings } from "@/lib/models";
-import { getGuildChannel, getUserGuilds } from "@/lib/discord";
+import { getGuildChannel, getGuildMember, getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
 import { raidOptionsForExpansion } from "@/lib/raidsCatalog";
 import { RaidForm } from "../../RaidForm";
@@ -29,10 +29,12 @@ export default async function RaidSettingsPage({
     notFound();
   }
 
-  const [channel, settings] = await Promise.all([
+  const [channel, settings, leader] = await Promise.all([
     getGuildChannel(raid.channelID),
     Settings.findOne({ where: { guildID: raid.guildID } }),
+    getGuildMember(raid.guildID, raid.memberID),
   ]);
+  const leaderName = leader.nick || leader.user?.username || raid.memberID;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
@@ -72,6 +74,8 @@ export default async function RaidSettingsPage({
             confirmation: Boolean(raid.confirmation),
             softreserve: Boolean(raid.softreserve),
             channelName: channel.name,
+            leaderMemberID: raid.memberID,
+            leaderName,
           }}
         />
       </div>

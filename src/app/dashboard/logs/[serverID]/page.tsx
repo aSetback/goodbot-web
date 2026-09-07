@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin, getGuildChannels } from "@/lib/discord";
 import { Log } from "@/lib/models";
 import { CopyIconButton } from "@/components/CopyIconButton";
+import { GuildIcon } from "@/components/GuildIcon";
 
 const PAGE_SIZE = 100;
 
@@ -71,6 +72,9 @@ export default async function DashboardLogsPage({
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
+      <div className="mb-4 flex justify-center">
+        <GuildIcon guild={server} />
+      </div>
       <div>
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
           Logs &mdash; {server.name}

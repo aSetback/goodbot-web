@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Op } from "sequelize";
 import { auth } from "@/auth";
-import { getUserGuilds, isGuildAdmin, getGuildMember } from "@/lib/discord";
+import { getUserGuilds, isGuildAdmin, getGuildMember, getGuildChannels } from "@/lib/discord";
 import { Raid, Settings } from "@/lib/models";
 import { raidTypeName, raidOptionsForExpansion } from "@/lib/raidsCatalog";
+import { GuildIcon } from "@/components/GuildIcon";
 import { AddRaidModal } from "./AddRaidModal";
 
 export default async function DashboardRaidsPage({
@@ -37,7 +38,7 @@ export default async function DashboardRaidsPage({
   });
 
   const leaderIDs = [...new Set(raids.map((raid) => raid.memberID))];
-  const [leaderEntries, settings] = await Promise.all([
+  const [leaderEntries, settings, channels] = await Promise.all([
     Promise.all(
       leaderIDs.map(async (memberID) => {
         const member = await getGuildMember(serverID, memberID);
@@ -45,11 +46,16 @@ export default async function DashboardRaidsPage({
       })
     ),
     Settings.findOne({ where: { guildID: serverID } }),
+    getGuildChannels(serverID),
   ]);
   const leaderNames = new Map(leaderEntries);
+  const channelNames = new Map(channels.map((channel) => [channel.id, channel.name]));
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
+      <div className="mb-4 flex justify-center">
+        <GuildIcon guild={server} />
+      </div>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
@@ -71,6 +77,7 @@ export default async function DashboardRaidsPage({
             <th className="py-2 font-medium">Date</th>
             <th className="py-2 font-medium">Raid Type</th>
             <th className="py-2 font-medium">Raid Leader</th>
+            <th className="py-2 font-medium">Channel</th>
             <th className="py-2 font-medium" />
           </tr>
         </thead>
@@ -80,6 +87,20 @@ export default async function DashboardRaidsPage({
               <td className="py-2">{raid.date}</td>
               <td className="py-2">{raidTypeName(raid.raid)}</td>
               <td className="py-2">{leaderNames.get(raid.memberID) ?? raid.memberID}</td>
+              <td className="py-2">
+                {channelNames.has(raid.channelID) ? (
+                  <a
+                    href={`https://discord.com/channels/${serverID}/${raid.channelID}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-600 hover:text-amber-700"
+                  >
+                    #{channelNames.get(raid.channelID)}
+                  </a>
+                ) : (
+                  <span className="text-zinc-400">-</span>
+                )}
+              </td>
               <td className="py-2 text-right whitespace-nowrap">
                 <Link
                   href={`/raids/${raid.id}/roster`}

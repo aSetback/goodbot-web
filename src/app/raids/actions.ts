@@ -124,7 +124,46 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
     return { error: "Please fill out all required fields." };
   }
 
-  const raidData: RaidFields = {
+  if (raidID) {
+    const existingRaid = await Raid.findByPk(raidID);
+    if (!existingRaid) {
+      return { error: "Raid not found." };
+    }
+    await requireRaidAccess(existingRaid);
+
+    // The Raid Leader field posts the chosen member's ID directly (see
+    // RaidLeaderInput) -- fall back to whoever already leads the raid if
+    // it's somehow missing, rather than defaulting to whoever clicked Save
+    // (that was the previous behavior here, and is a real bug: editing
+    // someone else's raid would silently reassign it to you).
+    const memberID = String(formData.get("memberID") ?? "") || existingRaid.memberID;
+
+    const raidData: RaidFields = {
+      raid: raidType,
+      name: title,
+      title,
+      date,
+      time,
+      description,
+      confirmation,
+      softreserve,
+      color,
+      faction,
+      memberID,
+      guildID,
+    };
+
+    const result = await updateRaid(raidID, channelName, raidData);
+    if (result.error) {
+      return result;
+    }
+    // Edits are reached from the guild-scoped dashboard raid list, not the
+    // personal cross-guild /raids list -- send the admin back there.
+    revalidatePath(`/dashboard/${guildID}/raids`);
+    redirect(`/dashboard/${guildID}/raids`);
+  }
+
+  const newRaidData: RaidFields = {
     raid: raidType,
     name: title,
     title,
@@ -139,23 +178,14 @@ export async function saveRaid(formData: FormData): Promise<SaveRaidResult> {
     guildID,
   };
 
-  if (raidID) {
-    const existingRaid = await Raid.findByPk(raidID);
-    if (!existingRaid) {
-      return { error: "Raid not found." };
-    }
-    await requireRaidAccess(existingRaid);
-    const result = await updateRaid(raidID, channelName, raidData);
-    if (result.error) {
-      return result;
-    }
-    // Edits are reached from the guild-scoped dashboard raid list, not the
-    // personal cross-guild /raids list -- send the admin back there.
-    revalidatePath(`/dashboard/${guildID}/raids`);
-    redirect(`/dashboard/${guildID}/raids`);
-  }
-
-  const result = await createRaid(guildID, raidType, faction, channelName, session.discordId, raidData);
+  const result = await createRaid(
+    guildID,
+    raidType,
+    faction,
+    channelName,
+    session.discordId,
+    newRaidData
+  );
   if (result.error) {
     return result;
   }

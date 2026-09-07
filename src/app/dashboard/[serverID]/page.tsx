@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserGuilds, isGuildAdmin, goodBotInstalled } from "@/lib/discord";
+import { GuildIcon } from "@/components/GuildIcon";
 
 const LINKS = [
   { href: "settings", label: "Settings" },
@@ -28,6 +29,9 @@ export default async function DashboardServerPage({
   if (!(await goodBotInstalled(serverID))) {
     return (
       <div className="mx-auto w-full max-w-5xl px-6 py-16 text-center">
+        <div className="mb-6 flex justify-center">
+          <GuildIcon guild={server} />
+        </div>
         <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
           It looks like GoodBot is not installed on this server.
         </h1>
@@ -45,7 +49,12 @@ export default async function DashboardServerPage({
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
-      <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{server.name}</h1>
+      <div className="mb-4 flex justify-center">
+        <GuildIcon guild={server} />
+      </div>
+      <h1 className="text-center text-2xl font-semibold text-black dark:text-zinc-50">
+        {server.name}
+      </h1>
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href={`/dashboard/${serverID}/raids`}

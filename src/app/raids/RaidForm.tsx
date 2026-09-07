@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { saveRaid } from "./actions";
 import { RaidTypeSelect } from "./RaidTypeSelect";
+import { RaidLeaderInput } from "./RaidLeaderInput";
 import type { RaidTypeOption } from "@/lib/raidsCatalog";
 
 const inputClass =
@@ -19,6 +20,8 @@ export type RaidFormInitial = {
   confirmation: boolean;
   softreserve: boolean;
   channelName: string;
+  leaderMemberID: string;
+  leaderName: string;
 };
 
 export function RaidForm({
@@ -62,6 +65,19 @@ export function RaidForm({
         </label>
         <input id="title" name="title" defaultValue={initial?.title} className={inputClass} required />
       </div>
+
+      {initial && (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-zinc-500" htmlFor="raidLeader">
+            Raid Leader
+          </label>
+          <RaidLeaderInput
+            guildID={guildID}
+            defaultMemberID={initial.leaderMemberID}
+            defaultName={initial.leaderName}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <label className="text-sm text-zinc-500" htmlFor="raid">
