@@ -1,11 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { Raid, Signup, Character } from "@/lib/models";
 import { getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
 import { getClassRoleEmojis } from "@/lib/botInternalApi";
+import { formatRaidDate } from "@/lib/formatRaidDate";
 import { EmojiIcon } from "@/components/EmojiIcon";
+import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidTabs } from "../../RaidTabs";
 import { ConfirmButtons } from "./ConfirmButtons";
 import { RefreshChannelButton } from "./RefreshChannelButton";
@@ -59,20 +60,14 @@ export default async function RaidRosterPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">{raid.name}</h1>
-        <p className="text-sm text-zinc-500">
-          {new Date(raid.date + "T00:00:00").toLocaleDateString("en-US", {
-            month: "long",
-            day: "2-digit",
-            year: "numeric",
-          })}
-        </p>
-        <Link
-          href={`/dashboard/${raid.guildID}/raids`}
-          className="text-sm text-amber-600 hover:text-amber-700"
-        >
-          &larr; Back
-        </Link>
+        <Breadcrumbs
+          items={[
+            { label: "Raids", href: `/dashboard/${raid.guildID}/raids` },
+            { label: raid.name },
+          ]}
+        />
+        <h1 className="mt-1 text-2xl font-semibold text-black dark:text-zinc-50">{raid.name}</h1>
+        <p className="text-sm text-zinc-500">{formatRaidDate(raid.date)}</p>
       </div>
 
       <RaidTabs raidID={raid.id} active="roster" />

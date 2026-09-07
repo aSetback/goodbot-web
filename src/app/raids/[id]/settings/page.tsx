@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { Raid, Settings } from "@/lib/models";
 import { getGuildChannel, getGuildMember, getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
 import { raidOptionsForExpansion } from "@/lib/raidsCatalog";
+import { formatRaidDate } from "@/lib/formatRaidDate";
+import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidForm } from "../../RaidForm";
 import { RaidTabs } from "../../RaidTabs";
 import { CommandButtons } from "./CommandButtons";
@@ -39,15 +40,16 @@ export default async function RaidSettingsPage({
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+        <Breadcrumbs
+          items={[
+            { label: "Raids", href: `/dashboard/${raid.guildID}/raids` },
+            { label: raid.title || raid.name },
+          ]}
+        />
+        <h1 className="mt-1 text-2xl font-semibold text-black dark:text-zinc-50">
           {raid.title || raid.name}
         </h1>
-        <Link
-          href={`/dashboard/${raid.guildID}/raids`}
-          className="text-sm text-amber-600 hover:text-amber-700"
-        >
-          &larr; Back
-        </Link>
+        <p className="text-sm text-zinc-500">{formatRaidDate(raid.date)}</p>
       </div>
 
       <div className="mt-6">

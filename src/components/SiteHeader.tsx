@@ -17,6 +17,11 @@ export async function SiteHeader() {
           <Link href="/" className="hover:text-black dark:hover:text-zinc-50">
             Home
           </Link>
+          {session?.user && (
+            <Link href="/dashboard" className="hover:text-black dark:hover:text-zinc-50">
+              Dashboard
+            </Link>
+          )}
           <a
             href="https://discord.gg/4tG8Ab2Hub"
             className="hover:text-black dark:hover:text-zinc-50"

@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Op } from "sequelize";
 import { auth } from "@/auth";
 import { Raid, Signup, RaidReserve, ReserveItem } from "@/lib/models";
 import { getUserGuilds } from "@/lib/discord";
 import { hasRaidAccess } from "@/lib/requireRaidAccess";
+import { formatRaidDate } from "@/lib/formatRaidDate";
+import { Breadcrumbs } from "../../Breadcrumbs";
 import { RaidTabs } from "../../RaidTabs";
 import { ReserveSelect } from "./ReserveSelect";
 
@@ -45,15 +46,16 @@ export default async function AdminReservesPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
-          {(raid.name || raid.raid) + " " + raid.date}
+        <Breadcrumbs
+          items={[
+            { label: "Raids", href: `/dashboard/${raid.guildID}/raids` },
+            { label: raid.name || raid.raid },
+          ]}
+        />
+        <h1 className="mt-1 text-2xl font-semibold text-black dark:text-zinc-50">
+          {raid.name || raid.raid}
         </h1>
-        <Link
-          href={`/dashboard/${raid.guildID}/raids`}
-          className="text-sm text-amber-600 hover:text-amber-700"
-        >
-          &larr; Back
-        </Link>
+        <p className="text-sm text-zinc-500">{formatRaidDate(raid.date)}</p>
       </div>
 
       <RaidTabs raidID={raid.id} active="reserves" />
